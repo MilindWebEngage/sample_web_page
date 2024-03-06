@@ -27,7 +27,7 @@
   }(window, document, "webengage");
 
 
-  if (window.__WEBENGAGE_MOBILE_BRIDGE__) {
+  if (true) {
     console.log("WE_MOBILE_BRIDGE -> initialising mobile sdk");
     (function(bridge) {
       console.log("Calling bridge method ");
@@ -35,11 +35,11 @@
 
       webengage.user.login = webengage.user.identify = function(id) {
         console.log("calling login via bridge");
-        window.login.postMessage(id);
+       // TODO
       };
       webengage.user.logout = function() {
         console.log("calling logout via bridge");
-        window.logout.postMessage();
+       // TODO
       };
 
       webengage.user.setAttribute = function(name, value) {
@@ -53,7 +53,7 @@
         }
 
         if (type.call(attr) === '[object Object]') {
-          window.setAttribute.postMessage(JSON.stringify(attr));
+          // TODO
         }
       };
 
@@ -63,26 +63,27 @@
           name = null;
         }
 
-        window.screen.postMessage(name || null, type.call(data) === '[object Object]' ? JSON.stringify(data) : null);
+       // TODO
       };
 
       webengage.track = function(name, data) {
-        window.track.postMessage(name, type.call(data) === '[object Object]' ? JSON.stringify(data) : null);
+       // TODO
       };
 
-    })(window.__WEBENGAGE_MOBILE_BRIDGE__);
+    })();
 
-  } else {
-    console.log("WE_MOBILE_BRIDGE -> initialising web sdk")
-    setTimeout(function() {
-      var f = document.createElement("script"),
-        d = document.getElementById("_webengage_script_tag");
-      f.type = "text/javascript",
-        f.async = !0,
-        f.src = ("https:" == window.location.protocol ? "https://ssl.widgets.webengage.com" : "http://cdn.widgets.webengage.com") + "/js/webengage-min-v-6.0.js",
-        d.parentNode.insertBefore(f, d)
-    });
+   } 
+  //else {
+  //   console.log("WE_MOBILE_BRIDGE -> initialising web sdk")
+  //   setTimeout(function() {
+  //     var f = document.createElement("script"),
+  //       d = document.getElementById("_webengage_script_tag");
+  //     f.type = "text/javascript",
+  //       f.async = !0,
+  //       f.src = ("https:" == window.location.protocol ? "https://ssl.widgets.webengage.com" : "http://cdn.widgets.webengage.com") + "/js/webengage-min-v-6.0.js",
+  //       d.parentNode.insertBefore(f, d)
+  //   });
 
-  }
+  // }
 
-  webengage.init("~2024bb40");
+ // webengage.init("~2024bb40");

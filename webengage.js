@@ -36,7 +36,7 @@
       webengage.user.login = webengage.user.identify = function(id) {
         console.log("calling login via bridge");
         var loginScript = `webengage.user.login(id);`
-        window.inAppBrowserRef.executeScript(loginScript);
+        window.cordova.InAppBrowser.executeScript(loginScript);
        // TODO
       };
       webengage.user.logout = function() {

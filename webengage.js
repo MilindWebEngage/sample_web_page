@@ -97,7 +97,7 @@ if (window.ReactNativeWebView && /Android|iPhone|iPad|iPod/i.test(navigator.user
 
       };
 
-      webengage.track = function (name, data) {
+      webengage.analytics.track = function (name, data) {
 
         const message = {
           type: 'webengage',

@@ -17,7 +17,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
   </head>
   <body class="container-fluid" onload="loadFromLocalStorage()">
-    <h1>REACT NATIVE 05</h1>
+    <h1>REACT NATIVE 06</h1>
     <!-- Nav tabs -->
     <ul class="nav nav-tabs" id="navigation_panel" role="tablist">
       <li class="nav-item" role="presentation">
@@ -46,6 +46,20 @@
           aria-selected="false"
         >
           Event
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button
+          class="nav-link"
+          id="screen-tab"
+          data-bs-toggle="tab"
+          data-bs-target="#screen"
+          type="button"
+          role="tab"
+          aria-controls="screen"
+          aria-selected="false"
+        >
+          Screen
         </button>
       </li>
     </ul>
@@ -119,6 +133,7 @@
           </button>
         </div>
       </div>
+
       <div
         class="tab-pane"
         id="event"
@@ -153,6 +168,44 @@
           class="btn btn-primary"
         >
           Track
+        </button>
+      </div>
+
+      <!-- Screen Tracking Tab -->
+      <div
+        class="tab-pane"
+        id="screen"
+        role="tabpanel"
+        aria-labelledby="screen-tab"
+      >
+        <div class="mb-3">
+          <label for="screenName" class="form-label">Screen Name</label>
+          <input
+            type="text"
+            class="form-control"
+            name="screenName"
+            id="screenName"
+            aria-describedby="helpId"
+            placeholder="Enter Screen Name"
+          />
+        </div>
+        <div class="mb-3">
+          <label for="eventData" class="form-label">Event Data</label>
+          <input
+            type="text"
+            class="form-control"
+            name="screenData"
+            id="screenData"
+            aria-describedby="helpId"
+            placeholder="Enter Screen data"
+          />
+        </div>
+        <button
+          id="screen_button"
+          onclick="onScreenClick()"
+          class="btn btn-primary"
+        >
+          Track Screen
         </button>
       </div>
     </div>

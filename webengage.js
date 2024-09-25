@@ -26,7 +26,7 @@ var webengage;
   }
 }(window, document, "webengage");
 
-
+console.log(`WE_MOBILE_BRIDGE ${window.ReactNativeWebView}`);
 if (window.ReactNativeWebView && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
   console.log("WE_MOBILE_BRIDGE -> initialising mobile sdk");
   (function (bridge) {
@@ -34,12 +34,21 @@ if (window.ReactNativeWebView && /Android|iPhone|iPad|iPod/i.test(navigator.user
     var type = Object.prototype.toString;
 
     webengage.user.login = webengage.user.identify = function (id) {
-      window.ReactNativeWebView.postMessage('webengage', "Login", id);
+      const message = {
+        type: 'webengage',
+        action: 'Login',
+        id: id
+      };
+      window.ReactNativeWebView.postMessage(JSON.stringify(message));
     };
 
 
     webengage.user.logout = function () {
-      window.ReactNativeWebView.postMessage('webengage', "Logout", {});
+      const message = {
+        type: 'webengage',
+        action: 'Logout'
+      };
+      window.ReactNativeWebView.postMessage(JSON.stringify(message));
     };
 
     webengage.user.setAttribute = function (name, value) {
@@ -53,7 +62,14 @@ if (window.ReactNativeWebView && /Android|iPhone|iPad|iPod/i.test(navigator.user
       }
 
       if (type.call(attr) === '[object Object]') {
-        window.ReactNativeWebView.postMessage('webengage', "setAttribute", attr);
+
+        const message = {
+          type: 'webengage',
+          action: 'setAttribute',
+          data: attr
+        };
+
+        window.ReactNativeWebView.postMessage(JSON.stringify(message));
       }
     };
 
@@ -62,12 +78,34 @@ if (window.ReactNativeWebView && /Android|iPhone|iPad|iPod/i.test(navigator.user
         data = name;
         name = null;
       }
-      window.ReactNativeWebView.postMessage('webengage', "screen", name || null, type.call(data) === '[object Object]' ? data : null);
+
+
+      const message = {
+        type: 'webengage',
+        action: 'screen',
+        data: {
+          name: name || null,
+          attr: type.call(data) === '[object Object]' ? data : null
+        }
+      };
+
+      window.ReactNativeWebView.postMessage(JSON.stringify(message));
+
 
     };
 
     webengage.track = function (name, data) {
-      window.ReactNativeWebView.postMessage('webengage', "trackEvent", name, type.call(data) === '[object Object]' ? data : null);
+
+      const message = {
+        type: 'webengage',
+        action: 'trackEvent',
+        data: {
+          name: name || null,
+          attr: type.call(data) === '[object Object]' ? data : null
+        }
+      };
+
+      window.ReactNativeWebView.postMessage(JSON.stringify(message));
     };
 
   })();

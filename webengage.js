@@ -28,85 +28,91 @@ var webengage;
 
 console.log(`WE_MOBILE_BRIDGE ${window.ReactNativeWebView}`);
 if (window.ReactNativeWebView && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+  window.ReactNativeWebView.postMessage("WE_MOBILE_BRIDGE -> initialising mobile sdk");
   console.log("WE_MOBILE_BRIDGE -> initialising mobile sdk");
   (function (bridge) {
     console.log("Calling bridge method ");
-    var type = Object.prototype.toString;
+    window.ReactNativeWebView.postMessage("Calling bridge method");
+    try {
+      var type = Object.prototype.toString;
 
-    webengage.user.login = webengage.user.identify = function (id) {
-      const message = {
-        type: 'webengage',
-        action: 'Login',
-        id: id
+      webengage.user.login = webengage.user.identify = function (id) {
+        const message = {
+          type: 'webengage',
+          action: 'Login',
+          id: id
+        };
+        window.ReactNativeWebView.postMessage(JSON.stringify(message));
       };
-      window.ReactNativeWebView.postMessage(JSON.stringify(message));
-    };
 
 
-    webengage.user.logout = function () {
-      const message = {
-        type: 'webengage',
-        action: 'Logout'
+      webengage.user.logout = function () {
+        const message = {
+          type: 'webengage',
+          action: 'Logout'
+        };
+        window.ReactNativeWebView.postMessage(JSON.stringify(message));
       };
-      window.ReactNativeWebView.postMessage(JSON.stringify(message));
-    };
 
-    webengage.user.setAttribute = function (name, value) {
-      var attr = null;
+      webengage.user.setAttribute = function (name, value) {
+        var attr = null;
 
-      if (type.call(name) === '[object Object]') {
-        attr = name;
-      } else {
-        attr = {};
-        attr[name] = value;
-      }
+        if (type.call(name) === '[object Object]') {
+          attr = name;
+        } else {
+          attr = {};
+          attr[name] = value;
+        }
 
-      if (type.call(attr) === '[object Object]') {
+        if (type.call(attr) === '[object Object]') {
+
+          const message = {
+            type: 'webengage',
+            action: 'setAttribute',
+            data: attr
+          };
+
+          window.ReactNativeWebView.postMessage(JSON.stringify(message));
+        }
+      };
+
+      webengage.screen = function (name, data) {
+        if (arguments.length === 1 && type.call(name) === '[object Object]') {
+          data = name;
+          name = null;
+        }
+
 
         const message = {
           type: 'webengage',
-          action: 'setAttribute',
-          data: attr
+          action: 'screen',
+          data: {
+            name: name || null,
+            attr: type.call(data) === '[object Object]' ? data : null
+          }
         };
 
         window.ReactNativeWebView.postMessage(JSON.stringify(message));
-      }
-    };
-
-    webengage.screen = function (name, data) {
-      if (arguments.length === 1 && type.call(name) === '[object Object]') {
-        data = name;
-        name = null;
-      }
 
 
-      const message = {
-        type: 'webengage',
-        action: 'screen',
-        data: {
-          name: name || null,
-          attr: type.call(data) === '[object Object]' ? data : null
-        }
       };
 
-      window.ReactNativeWebView.postMessage(JSON.stringify(message));
+      webengage.track = function (name, data) {
 
+        const message = {
+          type: 'webengage',
+          action: 'trackEvent',
+          data: {
+            name: name || null,
+            attr: type.call(data) === '[object Object]' ? data : null
+          }
+        };
 
-    };
-
-    webengage.track = function (name, data) {
-
-      const message = {
-        type: 'webengage',
-        action: 'trackEvent',
-        data: {
-          name: name || null,
-          attr: type.call(data) === '[object Object]' ? data : null
-        }
+        window.ReactNativeWebView.postMessage(JSON.stringify(message));
       };
-
-      window.ReactNativeWebView.postMessage(JSON.stringify(message));
-    };
+    } catch (e) {
+      window.ReactNativeWebView.postMessage("ERROR " + e);
+    }
 
   })();
 

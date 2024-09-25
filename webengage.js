@@ -27,7 +27,7 @@ var webengage;
 }(window, document, "webengage");
 
 
-if (window.ReactNativeWebView) {
+if (window.ReactNativeWebView && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
   console.log("WE_MOBILE_BRIDGE -> initialising mobile sdk");
   (function (bridge) {
     console.log("Calling bridge method ");

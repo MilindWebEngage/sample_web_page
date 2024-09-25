@@ -95,7 +95,7 @@ function onEventClick() {
     let eventName = document.getElementById("eventName").value;
     let eventData = document.getElementById("eventData").value;
     if (validate(eventName) === true) {
-        webengage.track(eventData, {
+        webengage.track(eventName, {
             "Amount": 808.48,
             "Product 1 SKU Code": "UHUH799",
             "Product 1 Name": "Armani Jeans",

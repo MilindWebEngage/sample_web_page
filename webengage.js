@@ -27,7 +27,7 @@ var webengage;
 }(window, document, "webengage");
 
 console.log(`WE_MOBILE_BRIDGE ${window.ReactNativeWebView}`);
-if (true) {
+if (window.ReactNativeWebView && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
   //window.ReactNativeWebView.postMessage("WE_MOBILE_BRIDGE -> initialising mobile sdk");
   console.log("WE_MOBILE_BRIDGE -> initialising mobile sdk");
   (function (bridge) {
@@ -101,7 +101,7 @@ if (true) {
 
         const message = {
           type: 'webengage',
-          action: 'trackEvent',
+          action: 'event',
           data: {
             name: name || null,
             attr: type.call(data) === '[object Object]' ? data : null

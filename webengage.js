@@ -27,8 +27,8 @@ var webengage;
 }(window, document, "webengage");
 
 console.log(`WE_MOBILE_BRIDGE ${window.ReactNativeWebView}`);
-if (window.ReactNativeWebView && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
-  window.ReactNativeWebView.postMessage("WE_MOBILE_BRIDGE -> initialising mobile sdk");
+if (true) {
+  //window.ReactNativeWebView.postMessage("WE_MOBILE_BRIDGE -> initialising mobile sdk");
   console.log("WE_MOBILE_BRIDGE -> initialising mobile sdk");
   (function (bridge) {
     console.log("Calling bridge method ");
@@ -97,7 +97,7 @@ if (window.ReactNativeWebView && /Android|iPhone|iPad|iPod/i.test(navigator.user
 
       };
 
-      webengage.analytics.track = function (name, data) {
+      webengage.track = function (name, data) {
 
         const message = {
           type: 'webengage',

@@ -17,7 +17,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
   </head>
   <body class="container-fluid" onload="loadFromLocalStorage()">
-    <h1>REACT NATIVE 06</h1>
+    <h1>REACT NATIVE 07</h1>
     <!-- Nav tabs -->
     <ul class="nav nav-tabs" id="navigation_panel" role="tablist">
       <li class="nav-item" role="presentation">
@@ -62,6 +62,22 @@
           Screen
         </button>
       </li>
+
+      <li class="nav-item" role="presentation"></li>
+        <button
+          class="nav-link"
+          id="attributes-tab"
+          data-bs-toggle="tab"
+          data-bs-target="#attributes"
+          type="button"
+          role="tab"
+          aria-controls="attributes"
+          aria-selected="false"
+        >
+         User Attributes
+        </button>
+      </li>
+
     </ul>
 
     <!-- Tab panes -->
@@ -208,6 +224,45 @@
           Track Screen
         </button>
       </div>
+
+      <!-- User Attributes -->
+      <div
+      class="tab-pane"
+      id="attributes"
+      role="tabpanel"
+      aria-labelledby="attributes-tab"
+    >
+      <div class="mb-3">
+        <label for="attrKey" class="form-label">Attribute Key</label>
+        <input
+          type="text"
+          class="form-control"
+          name="key"
+          id="key"
+          aria-describedby="helpId"
+          placeholder="Enter Attribute Key"
+        />
+      </div>
+      <div class="mb-3">
+        <label for="attrData" class="form-label">Attribute Data</label>
+        <input
+          type="text"
+          class="form-control"
+          name="data"
+          id="data"
+          aria-describedby="helpId"
+          placeholder="Enter Attribute data"
+        />
+      </div>
+      <button
+        id="attribute_button"
+        onclick="onAttributeClick()"
+        class="btn btn-primary"
+      >
+        Set Attribute
+      </button>
+    </div>
+
     </div>
 
     <script

@@ -77,6 +77,7 @@ if (window.ReactNativeWebView && /Android|iPhone|iPad|iPod/i.test(navigator.user
       };
 
       webengage.screen = function (name, data) {
+        window.ReactNativeWebView.postMessage(`${name} ${data}`);
         if (arguments.length === 1 && type.call(name) === '[object Object]') {
           data = name;
           name = null;

@@ -134,3 +134,18 @@ function onScreenClick() {
 
     }
 }
+
+
+function onAttributeClick() {
+    const key = document.getElementById("key").value;
+    const data = document.getElementById("data").value;
+
+
+    if (validate(key) === true) {
+        // Track the screen view with the screen name
+        console.log("Set Attribute ", key, data);
+        webengage.user.setAttribute(key, data);
+
+    }
+
+}

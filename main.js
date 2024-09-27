@@ -105,7 +105,7 @@ function onEventClick() {
         "Product 2 Name": "Hugo Boss Jacket",
         "Product 2 Price": 507.99,
         "Product 2 Size": "L",
-        "Delivery Date": new Date("2017-01-09T00:00:00.000Z"),
+        "Delivery Date": formatDateCustom(new Date("2017-01-09T00:00:00.000Z")),
         "Delivery City": "San Francisco",
         "Delivery ZIP": "94121",
         "Coupon Applied": "BOGO17",
@@ -118,6 +118,18 @@ function onEventClick() {
     } else {
         console.log("Invalid event name:", eventName);  // Log error for invalid name
     }
+}
+
+function formatDateCustom(date) {
+    if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+        return "~t" + date.getUTCFullYear() + "-" +
+            ("0" + (date.getUTCMonth() + 1)).slice(-2) + "-" +
+            ("0" + date.getUTCDate()).slice(-2) + "T" +
+            ("0" + date.getUTCHours()).slice(-2) + ":" +
+            ("0" + date.getUTCMinutes()).slice(-2) + ":" +
+            ("0" + date.getUTCSeconds()).slice(-2) + "." +
+            ("00" + date.getUTCMilliseconds()).slice(-3) + "Z";
+    } else return date;
 }
 
 // Function to handle screen tracking

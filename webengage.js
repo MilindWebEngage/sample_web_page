@@ -127,7 +127,7 @@ if (window.ReactNativeWebView && /Android|iPhone|iPad|iPod/i.test(navigator.user
       f.src = ("https:" == window.location.protocol ? "https://ssl.widgets.webengage.com" : "http://cdn.widgets.webengage.com") + "/js/webengage-min-v-6.0.js",
       d.parentNode.insertBefore(f, d)
   });
-  webengage.init("~2024bb40");
+  webengage.init("YOUR_LICENSE_CODE");
 
 }
 

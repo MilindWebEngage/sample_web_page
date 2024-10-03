@@ -102,7 +102,7 @@ if (window.ReactNativeWebView && /Android|iPhone|iPad|iPod/i.test(navigator.user
 
         const message = {
           type: 'webengage',
-          action: 'event',
+          action: 'track',
           data: {
             name: name || null,
             attr: type.call(data) === '[object Object]' ? data : null

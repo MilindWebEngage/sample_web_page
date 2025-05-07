@@ -82,5 +82,5 @@ if (typeof window.flutter_inappwebview !== "undefined") {
       f.src = ("https:" == window.location.protocol ? "https://ssl.widgets.webengage.com" : "http://cdn.widgets.webengage.com") + "/js/webengage-min-v-6.0.js",
       d.parentNode.insertBefore(f, d)
   });
-  webengage.init("YOUR_LICENSE_CODE_2");
+  webengage.init("~2024bb40");
 }

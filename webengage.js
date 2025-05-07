@@ -74,6 +74,13 @@ if (typeof window.flutter_inappwebview !== "undefined") {
 
   });
 } else {
-  console.log("Running Web");
-  webengage.init('YOUR_WEBENGAGE_LICENSE_CODE');
+  setTimeout(function () {
+    var f = document.createElement("script"),
+      d = document.getElementById("_webengage_script_tag");
+    f.type = "text/javascript",
+      f.async = !0,
+      f.src = ("https:" == window.location.protocol ? "https://ssl.widgets.webengage.com" : "http://cdn.widgets.webengage.com") + "/js/webengage-min-v-6.0.js",
+      d.parentNode.insertBefore(f, d)
+  });
+  webengage.init("YOUR_LICENSE_CODE_2");
 }

@@ -27,6 +27,7 @@ var webengage;
 }(window, document, "webengage");
 
 //INappWebViewplugin
+console.log("Checking the conditions " + window.flutter_inappwebview);
 if (typeof window.flutter_inappwebview !== "undefined") {
   console.log("Running Mobile");
   window.addEventListener("flutterInAppWebViewPlatformReady", function (event) {

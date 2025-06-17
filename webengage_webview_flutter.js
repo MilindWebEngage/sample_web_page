@@ -20,6 +20,18 @@ function initializeWebViewFlutterBridge() {
 
     initWebEngageBridge(sendToWebViewFlutter);
 }
+
+// WebEngage bridge init for flutter_inappwebview
+function initializeInAppWebViewBridge() {
+    const type = Object.prototype.toString;
+
+    const sendToInAppWebView = function (method, ...args) {
+        window.flutter_inappwebview.callHandler("webengage_flutter", method, ...args);
+    };
+
+    initWebEngageBridge(sendToInAppWebView);
+}
+
 // Core init logic used by both
 function initWebEngageBridge(sendFunction) {
     const type = Object.prototype.toString;

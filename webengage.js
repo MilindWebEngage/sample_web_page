@@ -26,7 +26,7 @@ var webengage;
   }
 }(window, document, "webengage");
 
-
+console.log("Checking condition");
 if (typeof window.isFlutterChannelAvailable === "function" && window.isFlutterChannelAvailable()) {
   console.log("Flutter WebView detected. Initializing bridge...");
   if (typeof window.initializeWebEngageFlutterBridge === "function") {
@@ -35,6 +35,7 @@ if (typeof window.isFlutterChannelAvailable === "function" && window.isFlutterCh
     console.warn("Flutter bridge function not found.");
   }
 } else {
+  console.log("Flutter WebView Not detected. Initializing websdk...");
   setTimeout(function () {
     var f = document.createElement("script"),
       d = document.getElementById("_webengage_script_tag");

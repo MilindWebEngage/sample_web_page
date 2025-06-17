@@ -26,8 +26,8 @@ var webengage;
   }
 }(window, document, "webengage");
 
-console.log("Checking condition");
-if (typeof window.isFlutterChannelAvailable === "function" && window.isFlutterChannelAvailable()) {
+
+if (typeof isFlutterChannelAvailable === "function" && isFlutterChannelAvailable()) {
   console.log("Flutter WebView detected. Initializing bridge...");
   if (typeof window.initializeWebEngageFlutterBridge === "function") {
     window.initializeWebEngageFlutterBridge();

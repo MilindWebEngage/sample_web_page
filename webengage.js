@@ -26,16 +26,14 @@ var webengage;
   }
 }(window, document, "webengage");
 
-
-if (typeof isFlutterChannelAvailable === "function" && isFlutterChannelAvailable()) {
-  console.log("Flutter WebView detected. Initializing bridge...");
-  if (typeof window.initializeWebEngageFlutterBridge === "function") {
-    window.initializeWebEngageFlutterBridge();
-  } else {
-    console.warn("Flutter bridge function not found.");
-  }
+if (isInAppWebViewAvailable()) {
+  console.log("Detected flutter_inappwebview. Waiting for platformReady...");
+  window.addEventListener("flutterInAppWebViewPlatformReady", initializeInAppWebViewBridge);
+} else if (isWebViewFlutterAvailable()) {
+  console.log("Detected webview_flutter. Initializing bridge...");
+  initializeWebViewFlutterBridge();
 } else {
-  console.log("Flutter WebView Not detected. Initializing websdk...");
+  console.log("Flutter WebView not detected. Loading WebEngage Web SDK...");
   setTimeout(function () {
     var f = document.createElement("script"),
       d = document.getElementById("_webengage_script_tag");
@@ -46,3 +44,15 @@ if (typeof isFlutterChannelAvailable === "function" && isFlutterChannelAvailable
   });
   webengage.init("d3a4b5a9");
 }
+
+// if (typeof isFlutterChannelAvailable === "function" && isFlutterChannelAvailable()) {
+//   console.log("Flutter WebView detected. Initializing bridge...");
+//   if (typeof window.initializeWebEngageFlutterBridge === "function") {
+//     window.initializeWebEngageFlutterBridge();
+//   } else {
+//     console.warn("Flutter bridge function not found.");
+//   }
+// } else {
+//   console.log("Flutter WebView Not detected. Initializing websdk...");
+
+// }

@@ -26,53 +26,14 @@ var webengage;
   }
 }(window, document, "webengage");
 
-//INappWebViewplugin
-console.log("Checking the conditions " + window.flutter_inappwebview);
-if (typeof window.flutter_inappwebview !== "undefined") {
-  console.log("Running Mobile");
-  window.addEventListener("flutterInAppWebViewPlatformReady", function (event) {
-    (function () {
-      var type = Object.prototype.toString;
-      webengage.user.login = webengage.user.identify = function (id) {
-        window.flutter_inappwebview.callHandler('webengage', "Login", id);
-      };
 
-
-      webengage.user.logout = function () {
-        window.flutter_inappwebview.callHandler('webengage', "Logout", {});
-      };
-
-      webengage.user.setAttribute = function (name, value) {
-        var attr = null;
-
-        if (type.call(name) === '[object Object]') {
-          attr = name;
-        } else {
-          attr = {};
-          attr[name] = value;
-        }
-
-        if (type.call(attr) === '[object Object]') {
-          window.flutter_inappwebview.callHandler('webengage', "setAttribute", attr);
-        }
-      };
-
-      webengage.screen = function (name, data) {
-        if (arguments.length === 1 && type.call(name) === '[object Object]') {
-          data = name;
-          name = null;
-        }
-        window.flutter_inappwebview.callHandler('webengage', "screen", name || null, type.call(data) === '[object Object]' ? data : null);
-
-      };
-
-      webengage.track = function (name, data) {
-        window.flutter_inappwebview.callHandler('webengage', "trackEvent", name, type.call(data) === '[object Object]' ? data : null);
-      };
-
-    }());
-
-  });
+if (typeof window.isFlutterChannelAvailable === "function" && window.isFlutterChannelAvailable()) {
+  console.log("Flutter WebView detected. Initializing bridge...");
+  if (typeof window.initializeWebEngageFlutterBridge === "function") {
+    window.initializeWebEngageFlutterBridge();
+  } else {
+    console.warn("Flutter bridge function not found.");
+  }
 } else {
   setTimeout(function () {
     var f = document.createElement("script"),
@@ -82,5 +43,5 @@ if (typeof window.flutter_inappwebview !== "undefined") {
       f.src = ("https:" == window.location.protocol ? "https://ssl.widgets.webengage.com" : "http://cdn.widgets.webengage.com") + "/js/webengage-min-v-6.0.js",
       d.parentNode.insertBefore(f, d)
   });
-  webengage.init("~2024bb40");
+  webengage.init("d3a4b5a9");
 }

@@ -22,8 +22,8 @@ function isInAppWebViewAvailable() {
 // ====================================
 const CHANNEL_NAME = "webengage_flutter";
 
-const METHOD_LOGIN = "Login";
-const METHOD_LOGOUT = "Logout";
+const METHOD_LOGIN = "login";
+const METHOD_LOGOUT = "logout";
 const METHOD_SET_ATTRIBUTE = "setAttribute";
 const METHOD_SCREEN = "screen";
 const METHOD_TRACK_EVENT = "trackEvent";

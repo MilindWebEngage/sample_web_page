@@ -55,6 +55,21 @@ function onFormSubmit() {
         setWebEngageAttributes("we_phone", phone);
         storeInLocalStorage("phone", phone);
     }
+    setWebEngageAttributes("we_first_name", "John");
+setWebEngageAttributes("we_last_name", "Doe");
+setWebEngageAttributes("we_email", "john.doe@example.com");
+setWebEngageAttributes("we_birth_date", "1990-05-15");
+setWebEngageAttributes("we_phone", "+551155256325");
+setWebEngageAttributes("we_gender", "male");
+setWebEngageAttributes("we_company", "WebEngage");
+setWebEngageAttributes("we_hashed_email", "5d41402abc4b2a76b9719d911017c592");
+setWebEngageAttributes("we_hashed_phone", "e99a18c428cb38d5f260853678922e03");
+setWebEngageAttributes("we_push_opt_in", true);
+setWebEngageAttributes("we_sms_opt_in", true);
+setWebEngageAttributes("we_email_opt_in", false);
+setWebEngageAttributes("we_whatsapp_opt_in", true);
+setWebEngageAttributes("we_viber_opt_in", false);
+
 }
 
 function validate(string) {

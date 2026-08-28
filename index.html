@@ -149,7 +149,7 @@
       class="stop-btn"
       onclick="stopDataPass()"
     >
-      Stop 2.0
+      Stop 2.1
     </button>
 
     <div
@@ -243,13 +243,12 @@
       }
 
       let intentUrl = "";
-
+      var result = {"session_id":sessionId,"token":token};
       if (platform === "android") {
 
         intentUrl =
           `intent://inspector` +
-          `?session_id=${encodeURIComponent(sessionId)}` +
-          `&token=${encodeURIComponent(token)}` +
+          `?data=${encodeURIComponent(result)}`
           `#Intent;` +
           `scheme=webengage-inspector;` +
           `end`;
@@ -258,8 +257,7 @@
 
         intentUrl =
           `webengage-inspector://inspector` +
-          `?session_id=${encodeURIComponent(sessionId)}` +
-          `&token=${encodeURIComponent(token)}`;
+          `?data=${encodeURIComponent(result)}`;
 
       } else if (platform === "web") {
 

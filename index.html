@@ -149,7 +149,7 @@
       class="stop-btn"
       onclick="stopDataPass()"
     >
-      Stop 2.1
+      Stop 2.2
     </button>
 
     <div
@@ -248,7 +248,7 @@
 
         intentUrl =
           `intent://inspector` +
-          `?data=${encodeURIComponent(result)}`
+          `?data=${encodeURIComponent(JSON.stringify(result))}`
           `#Intent;` +
           `scheme=webengage-inspector;` +
           `end`;
@@ -257,7 +257,7 @@
 
         intentUrl =
           `webengage-inspector://inspector` +
-          `?data=${encodeURIComponent(result)}`;
+          `?data=${encodeURIComponent(JSON.stringify(result))}`;
 
       } else if (platform === "web") {
 

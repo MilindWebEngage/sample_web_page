@@ -1,237 +1,287 @@
-<html lang="en"><head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WebEngage App Connector</title>
-    <style>
-      * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-      }
-      body {
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-          sans-serif;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        min-height: 100vh;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 20px;
-      }
-      .container {
-        background: white;
-        border-radius: 20px;
-        padding: 40px;
-        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-        text-align: center;
-        max-width: 400px;
-        width: 100%;
-      }
-      .logo {
-        font-size: 48px;
-        margin-bottom: 20px;
-      }
-      h1 {
-        color: #333;
-        margin-bottom: 10px;
-        font-size: 24px;
-      }
-      .subtitle {
-        color: #666;
-        margin-bottom: 30px;
-        font-size: 14px;
-      }
-      .connect-btn {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        border: none;
-        padding: 16px 32px;
-        border-radius: 50px;
-        font-size: 18px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: transform 0.2s, box-shadow 0.2s;
-        width: 100%;
-        margin-bottom: 20px;
-      }
-      .connect-btn:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
-      }
-      .connect-btn:active {
-        transform: translateY(0);
-      }
-      .stop-btn {
-        background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
-        color: white;
-        border: none;
-        padding: 16px 32px;
-        border-radius: 50px;
-        font-size: 18px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: transform 0.2s, box-shadow 0.2s;
-        width: 100%;
-        margin-bottom: 20px;
-      }
-      .stop-btn:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 10px 20px rgba(231, 76, 60, 0.3);
-      }
-      .stop-btn:active {
-        transform: translateY(0);
-      }
-      .platform-info {
-        background: #f8f9fa;
-        padding: 15px;
-        border-radius: 10px;
-        margin-top: 20px;
-        font-size: 12px;
-        color: #666;
-      }
-      .error {
-        color: #e74c3c;
-        margin-top: 15px;
-        font-size: 14px;
-      }
-      .error-container {
-        background: #fdf2f2;
-        border: 2px solid #e74c3c;
-        border-radius: 10px;
-        padding: 20px;
-        margin-top: 20px;
-        display: none;
-      }
-      .error-icon {
-        font-size: 32px;
-        margin-bottom: 10px;
-      }
-      .error-title {
-        color: #e74c3c;
-        font-weight: 600;
-        margin-bottom: 8px;
-      }
-      .error-message {
-        color: #c0392b;
-        font-size: 14px;
-      }
-    </style>
-  </head>
-  <body>
-    <div class="container">
-      <div class="logo">📱</div>
-      <h1>Connect to WebEngage Inspector</h1>
-      <p class="subtitle">Tap the button below to open the your app</p>
 
-      <button class="connect-btn" onclick="connectToApp()" style="display: none;">🚀 Open App</button>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WebEngage Inspector 2</title>
 
-      <button class="stop-btn" id="stopBtn" onclick="stopDataPass()" style="display: none;">🛑 Stop</button>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #f5f5f5;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
 
-      <div id="error" class="error" style="display: none"></div>
+    .container {
+      width: 90%;
+      max-width: 500px;
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+      text-align: center;
+      box-sizing: border-box;
+    }
 
-      <div id="errorContainer" class="error-container" style="display: block;">
-        <div class="error-icon">⚠️</div>
-        <div class="error-title">Connection Error</div>
-        <div id="errorMessage" class="error-message">Missing data or platform parameter. Please ensure both 'data' and 'platform' parameters are provided in the URL.</div>
+    h1 {
+      margin-top: 0;
+      color: #333;
+    }
+
+    p {
+      color: #666;
+      line-height: 1.5;
+    }
+
+    button {
+      width: 100%;
+      padding: 14px;
+      margin-top: 12px;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    .connect-btn {
+      background: #007bff;
+      color: white;
+      display: none;
+    }
+
+    .stop-btn {
+      background: #dc3545;
+      color: white;
+      display: none;
+    }
+
+    .error-container {
+      display: none;
+      margin-top: 20px;
+      padding: 15px;
+      border-radius: 8px;
+      background: #f8d7da;
+      color: #721c24;
+    }
+
+    .error {
+      display: none;
+      margin-top: 20px;
+      padding: 15px;
+      border-radius: 8px;
+      background: #fff3cd;
+      color: #856404;
+    }
+
+    .details {
+      display: none;
+      text-align: left;
+      margin-top: 20px;
+      padding: 15px;
+      background: #f8f9fa;
+      border-radius: 8px;
+      word-break: break-all;
+    }
+
+    .details strong {
+      color: #333;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="container">
+    <h1>WebEngage Inspector</h1>
+
+    <p>
+      Connect this browser page to the WebEngage Inspector app.
+    </p>
+
+    <div id="details" class="details">
+      <div>
+        <strong>Platform:</strong>
+        <span id="platformValue"></span>
+      </div>
+
+      <div style="margin-top: 10px;">
+        <strong>Data:</strong>
+        <span id="dataValue"></span>
+      </div>
+
+      <div style="margin-top: 10px;">
+        <strong>Token:</strong>
+        <span id="tokenValue"></span>
       </div>
     </div>
 
-    <script>
-      let platform = "";
-      let data = "";
+    <button
+      class="connect-btn"
+      onclick="connectToApp()"
+    >
+      Connect to App2
+    </button>
 
-      // Parse URL parameters
-      function parseParams() {
-        const urlParams = new URLSearchParams(window.location.search);
-        data = urlParams.get("data") || "";
-        platform = urlParams.get("platform") || "";
+    <button
+      id="stopBtn"
+      class="stop-btn"
+      onclick="stopDataPass()"
+    >
+      Stop
+    </button>
 
-        if (!data || !platform) {
-          showErrorContainer(
-            "Missing data or platform parameter. Please ensure both 'data' and 'platform' parameters are provided in the URL."
-          );
-        } else {
-          // Show both buttons when params are valid
-          document.querySelector(".connect-btn").style.display = "block";
-          document.getElementById("stopBtn").style.display = "block";
-          document.getElementById("errorContainer").style.display = "none";
-        }
+    <div id="errorContainer" class="error-container">
+      <span id="errorMessage"></span>
+    </div>
+
+    <div id="error" class="error"></div>
+  </div>
+
+  <script>
+    let platform = "";
+    let data = "";
+    let token = "";
+
+    // Parse URL parameters
+    function parseParams() {
+      const urlParams = new URLSearchParams(window.location.search);
+
+      data = urlParams.get("data") || "";
+      token = urlParams.get("token") || "";
+      platform = urlParams.get("platform") || "";
+
+      if (!data || !token || !platform) {
+        showErrorContainer(
+          "Missing data, token, or platform parameter. Please ensure all required parameters are provided in the URL."
+        );
+        return;
       }
 
-      function connectToApp() {
-        if (!data || !platform) {
-          showErrorContainer("Missing required parameters");
-          return;
-        }
+      // Show parsed values
+      document.getElementById("platformValue").textContent = platform;
+      document.getElementById("dataValue").textContent = data;
+      document.getElementById("tokenValue").textContent = token;
 
-        let intentUrl = "";
+      document.getElementById("details").style.display = "block";
 
-        if (platform === "android") {
-          intentUrl = `intent://inspector?data=${encodeURIComponent(
-            data
-          )}#Intent;scheme=webengage-inspector;end`;
-        } else if (platform === "ios") {
-          intentUrl = `webengage-inspector://inspector?data=${encodeURIComponent(
-            data
-          )}`;
-        } else if (platform === "web") {
-          // For web, could redirect to a web app or show instructions
-          showError("Web platform not supported for app opening");
-          return;
-        } else {
-          showError("Unsupported platform: " + platform);
-          return;
-        }
+      // Show buttons when params are valid
+      document.querySelector(".connect-btn").style.display = "block";
+      document.getElementById("stopBtn").style.display = "block";
+      document.getElementById("errorContainer").style.display = "none";
+    }
 
-        // Try to open the app
-        window.location.href = intentUrl;
+    function connectToApp() {
+      if (!data || !token || !platform) {
+        showErrorContainer("Missing required parameters");
+        return;
       }
 
-      function showError(message) {
-        const error = document.getElementById("error");
-        error.textContent = message;
-        error.style.display = "block";
+      let intentUrl = "";
+
+      if (platform === "android") {
+
+        intentUrl =
+          `intent://inspector?data=${encodeURIComponent(data)}` +
+          `&token=${encodeURIComponent(token)}` +
+          `#Intent;scheme=webengage-inspector;end`;
+
+      } else if (platform === "ios") {
+
+        intentUrl =
+          `webengage-inspector://inspector?data=${encodeURIComponent(data)}` +
+          `&token=${encodeURIComponent(token)}`;
+
+      } else if (platform === "web") {
+
+        showError("Web platform not supported for app opening");
+        return;
+
+      } else {
+
+        showError("Unsupported platform: " + platform);
+        return;
       }
 
-      function showErrorContainer(message) {
-        const errorContainer = document.getElementById("errorContainer");
-        const errorMessage = document.getElementById("errorMessage");
-        errorMessage.textContent = message;
-        errorContainer.style.display = "block";
+      console.log("Opening app with URL:", intentUrl);
 
-        // Hide both buttons when showing error
-        document.querySelector(".connect-btn").style.display = "none";
-        document.getElementById("stopBtn").style.display = "none";
+      // Try to open the app
+      window.location.href = intentUrl;
+    }
+
+    function showError(message) {
+      const error = document.getElementById("error");
+
+      error.textContent = message;
+      error.style.display = "block";
+    }
+
+    function showErrorContainer(message) {
+      const errorContainer =
+        document.getElementById("errorContainer");
+
+      const errorMessage =
+        document.getElementById("errorMessage");
+
+      errorMessage.textContent = message;
+      errorContainer.style.display = "block";
+
+      // Hide buttons
+      document.querySelector(".connect-btn").style.display = "none";
+      document.getElementById("stopBtn").style.display = "none";
+
+      // Hide details
+      document.getElementById("details").style.display = "none";
+    }
+
+    function stopDataPass() {
+      if (!platform) {
+        showErrorContainer(
+          "Missing platform parameter. Cannot send stop signal."
+        );
+        return;
       }
 
-      // Initialize on page load
-      document.addEventListener("DOMContentLoaded", parseParams);
+      let intentUrl = "";
 
-      function stopDataPass() {
-        if (!platform) {
-          showErrorContainer("Missing platform parameter. Cannot send stop signal.");
-          return;
-        }
+      if (platform === "android") {
 
-        let intentUrl = "";
-
-        if (platform === "android") {
-          intentUrl = `intent://inspector?data=${encodeURIComponent(
+        intentUrl =
+          `intent://inspector?data=${encodeURIComponent(
             "stop"
-          )}#Intent;scheme=webengage-inspector;end`;
-        } else if (platform === "ios") {
-          intentUrl = `webengage-inspector://inspector?data=${encodeURIComponent(
+          )}` +
+          `#Intent;scheme=webengage-inspector;end`;
+
+      } else if (platform === "ios") {
+
+        intentUrl =
+          `webengage-inspector://inspector?data=${encodeURIComponent(
             "stop"
           )}`;
-        } else {
-          showError("Unsupported platform: " + platform);
-          return;
-        }
 
-        // Pass data=stop to the app
-        window.location.href = intentUrl;
+      } else {
+
+        showError("Unsupported platform: " + platform);
+        return;
       }
-    </script>
-  
 
-</body></html>
+      console.log("Sending stop signal:", intentUrl);
+
+      // Pass data=stop to the app
+      window.location.href = intentUrl;
+    }
+
+    // Initialize on page load
+    document.addEventListener(
+      "DOMContentLoaded",
+      parseParams
+    );
+  </script>
+
+</body>
+</html>

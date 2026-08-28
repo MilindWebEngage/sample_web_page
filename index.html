@@ -386,36 +386,3 @@
 </body>
 </html>
 ```
-
-### URL format
-
-Use:
-
-```text
-https://milindwebengage.github.io/sample_web_page/?session_id=a1caffea-80fb-457e-93ad-b7d5f0cd9478&token=33qln8kb6czrlm3dpoja1&platform=android
-```
-
-The page extracts:
-
-```js
-sessionId = "a1caffea-80fb-457e-93ad-b7d5f0cd9478";
-token = "33qln8kb6czrlm3dpoja1";
-platform = "android";
-```
-
-The Android **Connect to App** button generates:
-
-```text
-intent://inspector?session_id=a1caffea-80fb-457e-93ad-b7d5f0cd9478&token=33qln8kb6czrlm3dpoja1#Intent;scheme=webengage-inspector;end
-```
-
-Your Android activity can then read:
-
-```java
-Uri uri = getIntent().getData();
-
-String sessionId = uri.getQueryParameter("session_id");
-String token = uri.getQueryParameter("token");
-```
-
-So you no longer have `session_id=...` nested inside the `data` parameter.

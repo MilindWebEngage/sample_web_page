@@ -1,72 +1,237 @@
-<html>
-<head>    
-    <title>WebEngage WebBridge POC</title>
-    <link href="main.css" type="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-KK94CHFLLe+nY2dmCWGMq91rCGa5gtU4mk92HdvYe+M/SXH301p5ILy+dN9+nJOZ" crossorigin="anonymous">
-    <script src="main.js"></script>
-    <script id="_webengage_script_tag" type="text/javascript" src="webengage.js"></script>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+<html lang="en"><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebEngage App Connector</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+      }
+      .container {
+        background: white;
+        border-radius: 20px;
+        padding: 40px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        text-align: center;
+        max-width: 400px;
+        width: 100%;
+      }
+      .logo {
+        font-size: 48px;
+        margin-bottom: 20px;
+      }
+      h1 {
+        color: #333;
+        margin-bottom: 10px;
+        font-size: 24px;
+      }
+      .subtitle {
+        color: #666;
+        margin-bottom: 30px;
+        font-size: 14px;
+      }
+      .connect-btn {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        padding: 16px 32px;
+        border-radius: 50px;
+        font-size: 18px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: transform 0.2s, box-shadow 0.2s;
+        width: 100%;
+        margin-bottom: 20px;
+      }
+      .connect-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+      }
+      .connect-btn:active {
+        transform: translateY(0);
+      }
+      .stop-btn {
+        background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+        color: white;
+        border: none;
+        padding: 16px 32px;
+        border-radius: 50px;
+        font-size: 18px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: transform 0.2s, box-shadow 0.2s;
+        width: 100%;
+        margin-bottom: 20px;
+      }
+      .stop-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 20px rgba(231, 76, 60, 0.3);
+      }
+      .stop-btn:active {
+        transform: translateY(0);
+      }
+      .platform-info {
+        background: #f8f9fa;
+        padding: 15px;
+        border-radius: 10px;
+        margin-top: 20px;
+        font-size: 12px;
+        color: #666;
+      }
+      .error {
+        color: #e74c3c;
+        margin-top: 15px;
+        font-size: 14px;
+      }
+      .error-container {
+        background: #fdf2f2;
+        border: 2px solid #e74c3c;
+        border-radius: 10px;
+        padding: 20px;
+        margin-top: 20px;
+        display: none;
+      }
+      .error-icon {
+        font-size: 32px;
+        margin-bottom: 10px;
+      }
+      .error-title {
+        color: #e74c3c;
+        font-weight: 600;
+        margin-bottom: 8px;
+      }
+      .error-message {
+        color: #c0392b;
+        font-size: 14px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="logo">📱</div>
+      <h1>Connect to WebEngage Inspector</h1>
+      <p class="subtitle">Tap the button below to open the your app</p>
 
-</head>
-<body class="container-fluid" onload="loadFromLocalStorage()">
-    <!-- Nav tabs -->
-    <ul class="nav nav-tabs" id="navigation_panel" role="tablist">
-      <li class="nav-item" role="presentation">
-        <button class="nav-link active" id="home-tab" data-bs-toggle="tab" data-bs-target="#home" type="button" role="tab" aria-controls="home" aria-selected="true">Home</button>
-      </li>
-      <li class="nav-item" role="presentation">
-        <button class="nav-link" id="event-tab" data-bs-toggle="tab" data-bs-target="#event" type="button" role="tab" aria-controls="event" aria-selected="false">Event</button>
-      </li>
-    </ul>
-    
-    <!-- Tab panes --> 
-    <div class="tab-content">
-      <div class="tab-pane active" id="home" role="tabpanel" aria-labelledby="home-tab">
-          <div>
-              <div class="mb-3">
-                <label for="cuid" class="form-label">Username 1</label>
-                <input type="text"
-                  class="form-control" name="cuid" id="cuid" aria-describedby="helpId" placeholder="Enter username">
-              </div>
-              <div class="mb-3">
-                <label for="fname" class="form-label">First Name</label>
-                <input type="text"
-                  class="form-control" name="fname" id="fname" aria-describedby="helpId" placeholder="Enter First Name">
-              </div>
-              <div class="mb-3">
-                <label for="sname" class="form-label">Second Name</label>
-                <input type="text"
-                  class="form-control" name="sname" id="sname" aria-describedby="helpId" placeholder="Enter Second Name here">
-              </div>
-              <div class="mb-3">
-                <label for="phone" class="form-label">Phone</label>
-                <input type="number"
-                  class="form-control" name="phone" id="phone" aria-describedby="helpId" placeholder="Enter phone here">
-              </div>
-              <button id="login_button" onclick="onFormSubmit()" class="btn btn-primary">Login</button>
-              <button id="logout_button" onclick="onLogout()" class="btn btn-primary">Logout</button>
+      <button class="connect-btn" onclick="connectToApp()" style="display: none;">🚀 Open App</button>
 
-            </div>
-      </div>
-      <div class="tab-pane" id="event" role="tabpanel" aria-labelledby="event-tab"> 
-        <div class="mb-3">
-          <label for="eventName" class="form-label">Event Name</label>
-          <input type="text"
-            class="form-control" name="eventName" id="eventName" aria-describedby="helpId" placeholder="Enter Event Name">
-        </div>
-        <div class="mb-3">
-          <label for="eventData" class="form-label">Event Data</label>
-          <input type="text"
-            class="form-control" name="eventData" id="eventData" aria-describedby="helpId" placeholder="Enter Event data">
-        </div>
-        <button id="event_button" onclick="onEventClick()" class="btn btn-primary">Track</button>
+      <button class="stop-btn" id="stopBtn" onclick="stopDataPass()" style="display: none;">🛑 Stop</button>
 
+      <div id="error" class="error" style="display: none"></div>
+
+      <div id="errorContainer" class="error-container" style="display: block;">
+        <div class="error-icon">⚠️</div>
+        <div class="error-title">Connection Error</div>
+        <div id="errorMessage" class="error-message">Missing data or platform parameter. Please ensure both 'data' and 'platform' parameters are provided in the URL.</div>
       </div>
     </div>
-    
 
+    <script>
+      let platform = "";
+      let data = "";
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js" integrity="sha384-ENjdO4Dr2bkBIFxQpeoTz1HIcje39Wm4jDKdf19U8gI4ddQ3GYNS7NTKfAdVQSZe" crossorigin="anonymous"></script>
+      // Parse URL parameters
+      function parseParams() {
+        const urlParams = new URLSearchParams(window.location.search);
+        data = urlParams.get("data") || "";
+        platform = urlParams.get("platform") || "";
 
-</body>
-</html>
+        if (!data || !platform) {
+          showErrorContainer(
+            "Missing data or platform parameter. Please ensure both 'data' and 'platform' parameters are provided in the URL."
+          );
+        } else {
+          // Show both buttons when params are valid
+          document.querySelector(".connect-btn").style.display = "block";
+          document.getElementById("stopBtn").style.display = "block";
+          document.getElementById("errorContainer").style.display = "none";
+        }
+      }
+
+      function connectToApp() {
+        if (!data || !platform) {
+          showErrorContainer("Missing required parameters");
+          return;
+        }
+
+        let intentUrl = "";
+
+        if (platform === "android") {
+          intentUrl = `intent://inspector?data=${encodeURIComponent(
+            data
+          )}#Intent;scheme=webengage-inspector;end`;
+        } else if (platform === "ios") {
+          intentUrl = `webengage-inspector://inspector?data=${encodeURIComponent(
+            data
+          )}`;
+        } else if (platform === "web") {
+          // For web, could redirect to a web app or show instructions
+          showError("Web platform not supported for app opening");
+          return;
+        } else {
+          showError("Unsupported platform: " + platform);
+          return;
+        }
+
+        // Try to open the app
+        window.location.href = intentUrl;
+      }
+
+      function showError(message) {
+        const error = document.getElementById("error");
+        error.textContent = message;
+        error.style.display = "block";
+      }
+
+      function showErrorContainer(message) {
+        const errorContainer = document.getElementById("errorContainer");
+        const errorMessage = document.getElementById("errorMessage");
+        errorMessage.textContent = message;
+        errorContainer.style.display = "block";
+
+        // Hide both buttons when showing error
+        document.querySelector(".connect-btn").style.display = "none";
+        document.getElementById("stopBtn").style.display = "none";
+      }
+
+      // Initialize on page load
+      document.addEventListener("DOMContentLoaded", parseParams);
+
+      function stopDataPass() {
+        if (!platform) {
+          showErrorContainer("Missing platform parameter. Cannot send stop signal.");
+          return;
+        }
+
+        let intentUrl = "";
+
+        if (platform === "android") {
+          intentUrl = `intent://inspector?data=${encodeURIComponent(
+            "stop"
+          )}#Intent;scheme=webengage-inspector;end`;
+        } else if (platform === "ios") {
+          intentUrl = `webengage-inspector://inspector?data=${encodeURIComponent(
+            "stop"
+          )}`;
+        } else {
+          showError("Unsupported platform: " + platform);
+          return;
+        }
+
+        // Pass data=stop to the app
+        window.location.href = intentUrl;
+      }
+    </script>
+  
+
+</body></html>

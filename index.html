@@ -1,10 +1,14 @@
-
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>WebEngage Inspector 2</title>
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  />
+
+  <title>WebEngage Inspector 3</title>
 
   <style>
     body {
@@ -89,7 +93,16 @@
       word-break: break-all;
     }
 
-    .details strong {
+    .detail-row {
+      margin-bottom: 10px;
+    }
+
+    .detail-row:last-child {
+      margin-bottom: 0;
+    }
+
+    .detail-label {
+      font-weight: bold;
       color: #333;
     }
   </style>
@@ -98,6 +111,7 @@
 <body>
 
   <div class="container">
+
     <h1>WebEngage Inspector</h1>
 
     <p>
@@ -105,27 +119,29 @@
     </p>
 
     <div id="details" class="details">
-      <div>
-        <strong>Platform:</strong>
+
+      <div class="detail-row">
+        <span class="detail-label">Platform:</span>
         <span id="platformValue"></span>
       </div>
 
-      <div style="margin-top: 10px;">
-        <strong>Data:</strong>
-        <span id="dataValue"></span>
+      <div class="detail-row">
+        <span class="detail-label">Session ID:</span>
+        <span id="sessionIdValue"></span>
       </div>
 
-      <div style="margin-top: 10px;">
-        <strong>Token:</strong>
+      <div class="detail-row">
+        <span class="detail-label">Token:</span>
         <span id="tokenValue"></span>
       </div>
+
     </div>
 
     <button
       class="connect-btn"
       onclick="connectToApp()"
     >
-      Connect to App2
+      Connect to App
     </button>
 
     <button
@@ -133,52 +149,96 @@
       class="stop-btn"
       onclick="stopDataPass()"
     >
-      Stop
+      Stop 2.0
     </button>
 
-    <div id="errorContainer" class="error-container">
+    <div
+      id="errorContainer"
+      class="error-container"
+    >
       <span id="errorMessage"></span>
     </div>
 
-    <div id="error" class="error"></div>
+    <div
+      id="error"
+      class="error"
+    ></div>
+
   </div>
 
   <script>
     let platform = "";
-    let data = "";
+    let sessionId = "";
     let token = "";
 
     // Parse URL parameters
     function parseParams() {
-      const urlParams = new URLSearchParams(window.location.search);
+      const urlParams =
+        new URLSearchParams(window.location.search);
 
-      data = urlParams.get("data") || "";
-      token = urlParams.get("token") || "";
-      platform = urlParams.get("platform") || "";
+      sessionId =
+        urlParams.get("session_id") || "";
 
-      if (!data || !token || !platform) {
+      token =
+        urlParams.get("token") || "";
+
+      platform =
+        urlParams.get("platform") || "";
+
+      console.log("Platform:", platform);
+      console.log("Session ID:", sessionId);
+      console.log("Token:", token);
+
+      if (!sessionId || !token || !platform) {
+
         showErrorContainer(
-          "Missing data, token, or platform parameter. Please ensure all required parameters are provided in the URL."
+          "Missing session_id, token, or platform parameter. " +
+          "Please ensure all required parameters are provided in the URL."
         );
+
         return;
       }
 
-      // Show parsed values
-      document.getElementById("platformValue").textContent = platform;
-      document.getElementById("dataValue").textContent = data;
-      document.getElementById("tokenValue").textContent = token;
+      // Display values
+      document.getElementById(
+        "platformValue"
+      ).textContent = platform;
 
-      document.getElementById("details").style.display = "block";
+      document.getElementById(
+        "sessionIdValue"
+      ).textContent = sessionId;
 
-      // Show buttons when params are valid
-      document.querySelector(".connect-btn").style.display = "block";
-      document.getElementById("stopBtn").style.display = "block";
-      document.getElementById("errorContainer").style.display = "none";
+      document.getElementById(
+        "tokenValue"
+      ).textContent = token;
+
+      document.getElementById(
+        "details"
+      ).style.display = "block";
+
+      // Show buttons
+      document.querySelector(
+        ".connect-btn"
+      ).style.display = "block";
+
+      document.getElementById(
+        "stopBtn"
+      ).style.display = "block";
+
+      document.getElementById(
+        "errorContainer"
+      ).style.display = "none";
     }
 
+    // Connect to native app
     function connectToApp() {
-      if (!data || !token || !platform) {
-        showErrorContainer("Missing required parameters");
+
+      if (!sessionId || !token || !platform) {
+
+        showErrorContainer(
+          "Missing required parameters"
+        );
+
         return;
       }
 
@@ -187,96 +247,136 @@
       if (platform === "android") {
 
         intentUrl =
-          `intent://inspector?data=${encodeURIComponent(data)}` +
+          `intent://inspector` +
+          `?session_id=${encodeURIComponent(sessionId)}` +
           `&token=${encodeURIComponent(token)}` +
-          `#Intent;scheme=webengage-inspector;end`;
+          `#Intent;` +
+          `scheme=webengage-inspector;` +
+          `end`;
 
       } else if (platform === "ios") {
 
         intentUrl =
-          `webengage-inspector://inspector?data=${encodeURIComponent(data)}` +
+          `webengage-inspector://inspector` +
+          `?session_id=${encodeURIComponent(sessionId)}` +
           `&token=${encodeURIComponent(token)}`;
 
       } else if (platform === "web") {
 
-        showError("Web platform not supported for app opening");
+        showError(
+          "Web platform is not supported for app opening."
+        );
+
         return;
 
       } else {
 
-        showError("Unsupported platform: " + platform);
+        showError(
+          "Unsupported platform: " + platform
+        );
+
         return;
       }
 
-      console.log("Opening app with URL:", intentUrl);
+      console.log(
+        "Opening app:",
+        intentUrl
+      );
 
-      // Try to open the app
+      // Open native app
       window.location.href = intentUrl;
     }
 
+    // Send stop signal
+    function stopDataPass() {
+
+      if (!platform) {
+
+        showErrorContainer(
+          "Missing platform parameter. Cannot send stop signal."
+        );
+
+        return;
+      }
+
+      let intentUrl = "";
+
+      if (platform === "android") {
+
+        intentUrl =
+          `intent://inspector` +
+          `?data=stop` +
+          `#Intent;` +
+          `scheme=webengage-inspector;` +
+          `end`;
+
+      } else if (platform === "ios") {
+
+        intentUrl =
+          `webengage-inspector://inspector` +
+          `?data=stop`;
+
+      } else {
+
+        showError(
+          "Unsupported platform: " + platform
+        );
+
+        return;
+      }
+
+      console.log(
+        "Sending stop signal:",
+        intentUrl
+      );
+
+      window.location.href = intentUrl;
+    }
+
+    // Show generic error
     function showError(message) {
-      const error = document.getElementById("error");
+
+      const error =
+        document.getElementById("error");
 
       error.textContent = message;
       error.style.display = "block";
     }
 
+    // Show parameter error
     function showErrorContainer(message) {
+
       const errorContainer =
-        document.getElementById("errorContainer");
+        document.getElementById(
+          "errorContainer"
+        );
 
       const errorMessage =
-        document.getElementById("errorMessage");
+        document.getElementById(
+          "errorMessage"
+        );
 
       errorMessage.textContent = message;
-      errorContainer.style.display = "block";
+
+      errorContainer.style.display =
+        "block";
 
       // Hide buttons
-      document.querySelector(".connect-btn").style.display = "none";
-      document.getElementById("stopBtn").style.display = "none";
+      document.querySelector(
+        ".connect-btn"
+      ).style.display = "none";
+
+      document.getElementById(
+        "stopBtn"
+      ).style.display = "none";
 
       // Hide details
-      document.getElementById("details").style.display = "none";
+      document.getElementById(
+        "details"
+      ).style.display = "none";
     }
 
-    function stopDataPass() {
-      if (!platform) {
-        showErrorContainer(
-          "Missing platform parameter. Cannot send stop signal."
-        );
-        return;
-      }
-
-      let intentUrl = "";
-
-      if (platform === "android") {
-
-        intentUrl =
-          `intent://inspector?data=${encodeURIComponent(
-            "stop"
-          )}` +
-          `#Intent;scheme=webengage-inspector;end`;
-
-      } else if (platform === "ios") {
-
-        intentUrl =
-          `webengage-inspector://inspector?data=${encodeURIComponent(
-            "stop"
-          )}`;
-
-      } else {
-
-        showError("Unsupported platform: " + platform);
-        return;
-      }
-
-      console.log("Sending stop signal:", intentUrl);
-
-      // Pass data=stop to the app
-      window.location.href = intentUrl;
-    }
-
-    // Initialize on page load
+    // Initialize page
     document.addEventListener(
       "DOMContentLoaded",
       parseParams
@@ -285,3 +385,37 @@
 
 </body>
 </html>
+```
+
+### URL format
+
+Use:
+
+```text
+https://milindwebengage.github.io/sample_web_page/?session_id=a1caffea-80fb-457e-93ad-b7d5f0cd9478&token=33qln8kb6czrlm3dpoja1&platform=android
+```
+
+The page extracts:
+
+```js
+sessionId = "a1caffea-80fb-457e-93ad-b7d5f0cd9478";
+token = "33qln8kb6czrlm3dpoja1";
+platform = "android";
+```
+
+The Android **Connect to App** button generates:
+
+```text
+intent://inspector?session_id=a1caffea-80fb-457e-93ad-b7d5f0cd9478&token=33qln8kb6czrlm3dpoja1#Intent;scheme=webengage-inspector;end
+```
+
+Your Android activity can then read:
+
+```java
+Uri uri = getIntent().getData();
+
+String sessionId = uri.getQueryParameter("session_id");
+String token = uri.getQueryParameter("token");
+```
+
+So you no longer have `session_id=...` nested inside the `data` parameter.

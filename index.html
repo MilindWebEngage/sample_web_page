@@ -64,6 +64,18 @@
       display: none;
     }
 
+    .ios-we-btn {
+      background: #17a2b8;
+      color: white;
+      display: none;
+    }
+
+    .ios-default-btn {
+      background: #fd7e14;
+      color: white;
+      display: none;
+    }
+
     .stop-btn {
       background: #dc3545;
       color: white;
@@ -166,7 +178,16 @@
       class="connect-btn"
       onclick="connectToApp()"
     >
-      Connect to App
+      4. Connect to App (auto fallback)
+    </button>
+
+    <!-- Separate iOS default scheme test button -->
+    <button
+      id="iosDefaultBtn"
+      class="ios-default-btn"
+      onclick="testIOSDefaultScheme()"
+    >
+      1. webengage-inspector://inspector
     </button>
 
     <!-- Separate iOS test button -->
@@ -175,7 +196,16 @@
       class="ios-test-btn"
       onclick="testIOSBundleScheme()"
     >
-      Test iOS Bundle ID
+      2. webengage-inspector.{bundleId}://inspector
+    </button>
+
+    <!-- Separate iOS we-inspector test button -->
+    <button
+      id="iosWeBtn"
+      class="ios-we-btn"
+      onclick="testIOSWeInspectorScheme()"
+    >
+      3. we-inspector.{bundleId}://inspector
     </button>
 
     <div
@@ -227,7 +257,9 @@
         urlParams.get("platform") || "";
 
       bundleId =
-        urlParams.get("bundleId") || "";
+        urlParams.get("bundleId") ||
+        urlParams.get("bundleid") ||
+        "";
 
       console.log("Platform:", platform);
       console.log("Bundle ID:", bundleId);
@@ -282,13 +314,21 @@
         "stopBtn"
       ).style.display = "block";
 
-      // Show separate iOS test button
-      // only when bundleId is available.
-      if (bundleId) {
-        document.getElementById(
-          "iosTestBtn"
-        ).style.display = "block";
-      }
+      // Always show all iOS scheme test buttons,
+      // regardless of platform/bundleId — each
+      // button reports its own error on click if
+      // a required value is missing.
+      document.getElementById(
+        "iosDefaultBtn"
+      ).style.display = "block";
+
+      document.getElementById(
+        "iosTestBtn"
+      ).style.display = "block";
+
+      document.getElementById(
+        "iosWeBtn"
+      ).style.display = "block";
 
       document.getElementById(
         "errorContainer"
@@ -325,11 +365,20 @@
 
       } else if (platform === "ios") {
 
-        // Existing iOS flow.
-        // Keep this unchanged.
-        intentUrl =
-          `webengage-inspector://inspector` +
-          `?data=${encodeURIComponent(JSON.stringify(result))}`;
+        // Try bundle-specific schemes first,
+        // falling back to the default scheme.
+        const schemes = [];
+
+        if (bundleId) {
+          schemes.push(`webengage-inspector.${bundleId}`);
+          schemes.push(`we-inspector.${bundleId}`);
+        }
+
+        schemes.push("webengage-inspector");
+
+        tryIOSSchemes(schemes, result);
+
+        return;
 
       } else if (platform === "web") {
 
@@ -354,6 +403,122 @@
       );
 
       window.location.href = intentUrl;
+    }
+
+    // Separate iOS default scheme test
+    function testIOSDefaultScheme() {
+
+      if (!sessionId || !token) {
+
+        showErrorContainer(
+          "Missing session_id or token parameter."
+        );
+
+        return;
+      }
+
+      var result = {
+        "session_id": sessionId,
+        "token": token
+      };
+
+      // Default iOS scheme:
+      // webengage-inspector://inspector
+      const intentUrl =
+        `webengage-inspector://inspector` +
+        `?data=${encodeURIComponent(JSON.stringify(result))}`;
+
+      console.log(
+        "Testing iOS default scheme:",
+        intentUrl
+      );
+
+      // Show URL in UI for debugging
+      const iosUrl =
+        document.getElementById("iosUrl");
+
+      iosUrl.textContent =
+        intentUrl;
+
+      iosUrl.style.display =
+        "block";
+
+      // Open iOS app
+      window.location.href =
+        intentUrl;
+    }
+
+    // Try a list of iOS URL schemes in order,
+    // falling back to the next one if the app
+    // does not appear to have opened.
+    function tryIOSSchemes(schemes, result, index) {
+
+      index = index || 0;
+
+      if (index >= schemes.length) {
+
+        showError(
+          "Could not open the app with any known URL scheme."
+        );
+
+        return;
+      }
+
+      const scheme = schemes[index];
+
+      const intentUrl =
+        `${scheme}://inspector` +
+        `?data=${encodeURIComponent(JSON.stringify(result))}`;
+
+      console.log(
+        "Trying iOS scheme:",
+        intentUrl
+      );
+
+      // Show URL in UI for debugging
+      const iosUrl =
+        document.getElementById("iosUrl");
+
+      iosUrl.textContent =
+        intentUrl;
+
+      iosUrl.style.display =
+        "block";
+
+      let didHide = false;
+
+      function onVisibilityChange() {
+
+        if (document.hidden) {
+          didHide = true;
+        }
+      }
+
+      document.addEventListener(
+        "visibilitychange",
+        onVisibilityChange
+      );
+
+      window.location.href =
+        intentUrl;
+
+      setTimeout(function () {
+
+        document.removeEventListener(
+          "visibilitychange",
+          onVisibilityChange
+        );
+
+        // If the page never hid, the scheme
+        // likely failed to open the app.
+        if (!didHide) {
+          tryIOSSchemes(
+            schemes,
+            result,
+            index + 1
+          );
+        }
+      }, 1500);
     }
 
     // Separate iOS Bundle ID test
@@ -393,6 +558,61 @@
 
       console.log(
         "Testing iOS Bundle ID scheme:",
+        intentUrl
+      );
+
+      // Show URL in UI for debugging
+      const iosUrl =
+        document.getElementById("iosUrl");
+
+      iosUrl.textContent =
+        intentUrl;
+
+      iosUrl.style.display =
+        "block";
+
+      // Open iOS app
+      window.location.href =
+        intentUrl;
+    }
+
+    // Separate iOS we-inspector Bundle ID test
+    function testIOSWeInspectorScheme() {
+
+      if (!sessionId || !token) {
+
+        showErrorContainer(
+          "Missing session_id or token parameter."
+        );
+
+        return;
+      }
+
+      if (!bundleId) {
+
+        showError(
+          "Missing bundleId parameter."
+        );
+
+        return;
+      }
+
+      var result = {
+        "session_id": sessionId,
+        "token": token
+      };
+
+      // New iOS scheme:
+      // we-inspector.<bundleId>://inspector
+      const iosScheme =
+        `we-inspector.${bundleId}`;
+
+      const intentUrl =
+        `${iosScheme}://inspector` +
+        `?data=${encodeURIComponent(JSON.stringify(result))}`;
+
+      console.log(
+        "Testing iOS we-inspector Bundle ID scheme:",
         intentUrl
       );
 
@@ -494,7 +714,15 @@
       ).style.display = "none";
 
       document.getElementById(
+        "iosDefaultBtn"
+      ).style.display = "none";
+
+      document.getElementById(
         "iosTestBtn"
+      ).style.display = "none";
+
+      document.getElementById(
+        "iosWeBtn"
       ).style.display = "none";
 
       document.getElementById(

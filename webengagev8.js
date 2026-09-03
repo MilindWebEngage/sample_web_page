@@ -38,20 +38,61 @@
          It NEVER resets TotalUpoints.
       ======================================================= */
 
+      /*
+       * These values are resolved by WebEngage in the
+       * notification's OWN inline HTML (see streck.html),
+       * not in this externally-hosted script.
+       *
+       * WebEngage's personalization engine only substitutes
+       * {{user["custom"][...]}} tags in content it renders
+       * and serves itself. A file loaded via <script src>
+       * from a third-party URL (GitHub/jsDelivr) is fetched
+       * directly by the browser and never passes through
+       * WebEngage's server, so tags placed here would stay
+       * literal text forever - hence reading them off
+       * window.WE_CUSTOM_DATA instead.
+       */
+
+      var customData =
+        window.WE_CUSTOM_DATA || {};
+
       var rawStreakCount =
-        '{{user["custom"]["StreakCount"]}}';
+        customData.StreakCount;
 
       var rawTotalUpoints =
-        '{{user["custom"]["TotalUpoints"]}}';
+        customData.TotalUpoints;
 
       var rawCompletedDays =
-        '{{user["custom"]["CompletedDays"]}}';
+        customData.CompletedDays;
 
       var rawStreakDate =
-        '{{user["custom"]["StreakDate"]}}';
+        customData.StreakDate;
 
       var rawCycleStartDate =
-        '{{user["custom"]["CycleStartDate"]}}';
+        customData.CycleStartDate;
+
+
+      /* =======================================================
+         TEMP TEST HOOK
+
+         Confirms this externally-hosted script can read
+         window.WE_CUSTOM_DATA once fetched from the real
+         GitHub / jsDelivr URL.
+
+         No-op in the real check-in widget since it has no
+         element with this id. Safe to remove once verified.
+      ======================================================= */
+
+      var externalScriptTestElement =
+        document.getElementById("dateFromExternalScript");
+
+      if (externalScriptTestElement) {
+
+        externalScriptTestElement.textContent =
+          rawStreakDate;
+
+      }
+
 
       var streakCount =
         Number(rawStreakCount) || 0;

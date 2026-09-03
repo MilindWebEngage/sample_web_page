@@ -38,20 +38,35 @@
          It NEVER resets TotalUpoints.
       ======================================================= */
 
-      var streakCount =
-        Number('{{user["custom"]["StreakCount"]}}') || 0;
+      var rawStreakCount =
+        '{{user["custom"]["StreakCount"]}}';
 
-      var totalUpoints =
-        Number('{{user["custom"]["TotalUpoints"]}}') || 0;
+      var rawTotalUpoints =
+        '{{user["custom"]["TotalUpoints"]}}';
 
-      var completedDays =
-        Number('{{user["custom"]["CompletedDays"]}}') || 0;
+      var rawCompletedDays =
+        '{{user["custom"]["CompletedDays"]}}';
 
-      var streakDate =
+      var rawStreakDate =
         '{{user["custom"]["StreakDate"]}}';
 
-      var cycleStartDate =
+      var rawCycleStartDate =
         '{{user["custom"]["CycleStartDate"]}}';
+
+      var streakCount =
+        Number(rawStreakCount) || 0;
+
+      var totalUpoints =
+        Number(rawTotalUpoints) || 0;
+
+      var completedDays =
+        Number(rawCompletedDays) || 0;
+
+      var streakDate =
+        rawStreakDate;
+
+      var cycleStartDate =
+        rawCycleStartDate;
 
 
       /* =======================================================
@@ -306,14 +321,23 @@
          UI ELEMENTS
       ======================================================= */
 
-      var totalPointsElement =
-        document.getElementById("totalPoints");
-
       var bottomTotalPointsElement =
         document.getElementById("bottomTotalPoints");
 
-      var rewardInfoElement =
-        document.getElementById("rewardInfo");
+      var debugStreakCountElement =
+        document.getElementById("debugStreakCount");
+
+      var debugTotalUpointsElement =
+        document.getElementById("debugTotalUpoints");
+
+      var debugCompletedDaysElement =
+        document.getElementById("debugCompletedDays");
+
+      var debugStreakDateElement =
+        document.getElementById("debugStreakDate");
+
+      var debugCycleStartDateElement =
+        document.getElementById("debugCycleStartDate");
 
       var milestoneValueElement =
         document.getElementById("milestoneValue");
@@ -340,11 +364,39 @@
 
       function updateTotalUI() {
 
-        totalPointsElement.textContent =
-          totalUpoints;
-
         bottomTotalPointsElement.textContent =
           totalUpoints;
+
+      }
+
+
+      /* =======================================================
+         UPDATE DEBUG UI
+
+         Shows the RAW values received from WebEngage for
+         this custom attribute, before any sanitization
+         (Number() coercion, isMissingValue() defaulting).
+
+         Useful for confirming what is actually coming in
+         on repeat visits.
+      ======================================================= */
+
+      function updateDebugUI() {
+
+        debugStreakCountElement.textContent =
+          rawStreakCount;
+
+        debugTotalUpointsElement.textContent =
+          rawTotalUpoints;
+
+        debugCompletedDaysElement.textContent =
+          rawCompletedDays;
+
+        debugStreakDateElement.textContent =
+          rawStreakDate;
+
+        debugCycleStartDateElement.textContent =
+          rawCycleStartDate;
 
       }
 
@@ -381,9 +433,6 @@
             "🎉 <strong>7-day streak completed!</strong> " +
             "Your total milestone reward is 800 UPoints.";
 
-          rewardInfoElement.textContent =
-            "7-day milestone unlocked — 800 UPoints";
-
         }
 
         else if (streakCount >= 4) {
@@ -391,9 +440,6 @@
           milestoneMessage.innerHTML =
             "🔥 <strong>4-day streak completed!</strong> " +
             "Your total milestone reward is 400 UPoints.";
-
-          rewardInfoElement.textContent =
-            "4-day milestone unlocked — 400 UPoints";
 
         }
 
@@ -412,11 +458,6 @@
             " more consecutive day" +
             (remaining > 1 ? "s" : "") +
             "</strong> to unlock 400 UPoints.";
-
-          rewardInfoElement.textContent =
-            alreadyCheckedIn
-              ? "Come back tomorrow to earn 50 UPoints"
-              : "Earn 50 UPoints today";
 
         }
 
@@ -1060,6 +1101,8 @@
       updateTotalUI();
 
       updateMilestoneUI();
+
+      updateDebugUI();
 
       renderDays();
 

@@ -435,7 +435,7 @@
           ) {
 
             var missedDayPosition =
-              currentDay - gapDays;
+              currentDay - gapDays + 1;
 
             if (
               dayNumber === missedDayPosition

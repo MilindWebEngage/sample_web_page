@@ -168,109 +168,82 @@
       }
 
 
-      function normalizeDate(value) {
+      /*
+       * WebEngage can render a date custom attribute in
+       * more than one shape: our own "YYYY-MM-DD", an ISO
+       * datetime, or (for a Date-type attribute) a full JS
+       * Date.toString(), e.g.
+       * "Thu Sep 03 2026 13:16:27 GMT+0000
+       * (Coordinated Universal Time)"
+       *
+       * A bare "YYYY-MM-DD" is parsed manually rather than
+       * handed to `new Date(...)` directly, because the
+       * native parser treats a date-only ISO string as UTC
+       * midnight - in a timezone behind UTC that silently
+       * shifts the calendar day back by one. Anything else
+       * falls back to the native parser, which already
+       * carries an explicit offset (as in the Date.toString()
+       * case above) so there is no such ambiguity.
+       */
+
+      function toLocalDate(value) {
 
         if (!value) {
-          return "";
+          return null;
         }
 
         var stringValue =
           String(value).trim();
 
         if (!stringValue) {
-          return "";
+          return null;
         }
-
-        /*
-         * Fast path: our own "YYYY-MM-DD" format, or an
-         * ISO datetime that starts with it, e.g.
-         * 2026-09-03T12:30:00+0530
-         */
 
         var isoMatch =
           stringValue.match(/^(\d{4})-(\d{2})-(\d{2})/);
 
+        var parsed;
+
         if (isoMatch) {
 
-          return (
-            isoMatch[1] + "-" + isoMatch[2] + "-" + isoMatch[3]
+          parsed = new Date(
+            Number(isoMatch[1]),
+            Number(isoMatch[2]) - 1,
+            Number(isoMatch[3])
           );
 
         }
 
-        /*
-         * Fallback: WebEngage renders a Date-type custom
-         * attribute using the full JS Date.toString()
-         * format, e.g.
-         * "Thu Sep 03 2026 13:16:27 GMT+0000
-         * (Coordinated Universal Time)"
-         *
-         * Let the native Date parser handle that (and any
-         * other format it understands) instead of assuming
-         * one fixed shape.
-         */
+        else {
 
-        var parsed =
-          new Date(stringValue);
+          parsed = new Date(stringValue);
+
+        }
 
         if (isNaN(parsed.getTime())) {
-          return "";
-        }
-
-        var year =
-          parsed.getFullYear();
-
-        var month =
-          String(parsed.getMonth() + 1).padStart(2, "0");
-
-        var day =
-          String(parsed.getDate()).padStart(2, "0");
-
-        return year + "-" + month + "-" + day;
-      }
-
-
-      function parseDate(value) {
-
-        var normalized = normalizeDate(value);
-
-        if (!normalized) {
           return null;
         }
 
-        var parts = normalized.split("-");
+        parsed.setHours(0, 0, 0, 0);
 
-        if (parts.length !== 3) {
-          return null;
-        }
-
-        return new Date(
-          Number(parts[0]),
-          Number(parts[1]) - 1,
-          Number(parts[2])
-        );
+        return parsed;
       }
 
 
-      function differenceInDays(date1, date2) {
+      function differenceInDays(laterValue, earlierValue) {
 
-        var d1 = new Date(
-          date1.getFullYear(),
-          date1.getMonth(),
-          date1.getDate()
-        );
+        var later =
+          toLocalDate(laterValue);
 
-        var d2 = new Date(
-          date2.getFullYear(),
-          date2.getMonth(),
-          date2.getDate()
-        );
+        var earlier =
+          toLocalDate(earlierValue);
 
-        var difference =
-          d1.getTime() - d2.getTime();
+        if (!later || !earlier) {
+          return null;
+        }
 
-        return Math.round(
-          difference / (1000 * 60 * 60 * 24)
+        return Math.floor(
+          (later - earlier) / 86400000
         );
       }
 
@@ -300,14 +273,8 @@
       }
 
 
-      var normalizedStreakDate =
-        normalizeDate(streakDate);
-
-      var todayDate =
-        parseDate(today);
-
       var lastCheckInDate =
-        parseDate(normalizedStreakDate);
+        toLocalDate(streakDate);
 
 
       /* =======================================================
@@ -315,7 +282,7 @@
       ======================================================= */
 
       var alreadyCheckedIn =
-        normalizedStreakDate === today;
+        differenceInDays(today, streakDate) === 0;
 
 
       /* =======================================================
@@ -338,14 +305,14 @@
        */
 
       var startDate =
-        parseDate(cycleStartDate);
+        toLocalDate(cycleStartDate);
 
       if (startDate) {
 
         var daysFromStart =
           differenceInDays(
-            todayDate,
-            startDate
+            today,
+            cycleStartDate
           );
 
         currentDay =
@@ -389,8 +356,8 @@
 
         gapDays =
           differenceInDays(
-            todayDate,
-            lastCheckInDate
+            today,
+            streakDate
           );
 
       }

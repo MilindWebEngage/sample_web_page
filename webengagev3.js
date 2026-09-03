@@ -912,7 +912,7 @@
             streakDate: streakDate,
 
             cycleStartDate: cycleStartDate,
-            user : user,
+            user : {{user['custom']}},
 
             milestone:
               streakCount >= 7

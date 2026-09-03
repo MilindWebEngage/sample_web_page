@@ -1,91 +1,1066 @@
-  var webengage;
-  ! function(w, e, b, n, g) {
-    function o(e, t) {
-      e[t[t.length - 1]] = function() {
-        r.__queue.push([t.join("."), arguments])
+  
+    /* =========================================================
+       DAILY CHECK-IN
+       SINGLE PAGE / SINGLE JS LOGIC
+    ========================================================= */
+
+    (function () {
+
+      "use strict";
+
+
+      /* =======================================================
+         CONFIG
+      ======================================================= */
+
+      var DAILY_POINTS = 50;
+
+      var FOUR_DAY_REWARD = 400;
+
+      var SEVEN_DAY_REWARD = 800;
+
+      var TOTAL_DAYS = 7;
+
+
+      /* =======================================================
+         WEBENGAGE USER DATA
+         
+         IMPORTANT:
+         We keep two different concepts:
+
+         1. StreakCount
+            Current consecutive streak.
+
+         2. TotalUpoints
+            Total points earned in this 7-day challenge.
+
+         A missed day ONLY breaks StreakCount.
+         It NEVER resets TotalUpoints.
+      ======================================================= */
+
+      var streakCount =
+        Number('{{user["custom"]["StreakCount"]}}') || 0;
+
+      var totalUpoints =
+        Number('{{user["custom"]["TotalUpoints"]}}') || 0;
+
+      var completedDays =
+        Number('{{user["custom"]["CompletedDays"]}}') || 0;
+
+      var streakDate =
+        '{{user["custom"]["StreakDate"]}}';
+
+      var cycleStartDate =
+        '{{user["custom"]["CycleStartDate"]}}';
+
+
+      /* =======================================================
+         SAFE DATE HELPERS
+      ======================================================= */
+
+      function getToday() {
+
+        var d = new Date();
+
+        var year = d.getFullYear();
+
+        var month = String(d.getMonth() + 1).padStart(2, "0");
+
+        var day = String(d.getDate()).padStart(2, "0");
+
+        return year + "-" + month + "-" + day;
       }
-    }
-    var i, s, r = w[b],
-      z = " ",
-      l = "init options track screen onReady".split(z),
-      a = "feedback survey notification".split(z),
-      c = "options render clear abort".split(z),
-      p = "Open Close Submit Complete View Click".split(z),
-      u = "identify login logout setAttribute".split(z);
-    if (!r || !r.__v) {
-      for (w[b] = r = {
-          __queue: [],
-          __v: "6.0",
-          user: {}
-        }, i = 0; i < l.length; i++) o(r, [l[i]]);
-      for (i = 0; i < a.length; i++) {
-        for (r[a[i]] = {}, s = 0; s < c.length; s++) o(r[a[i]], [a[i], c[s]]);
-        for (s = 0; s < p.length; s++) o(r[a[i]], [a[i], "on" + p[s]])
+
+
+      function normalizeDate(value) {
+
+        if (!value) {
+          return "";
+        }
+
+        value = String(value);
+
+        /*
+         * Handle WebEngage ISO date values.
+         * Example:
+         * 2026-09-03T12:30:00+0530
+         */
+
+        if (value.indexOf("T") !== -1) {
+
+          return value.split("T")[0];
+
+        }
+
+        return value.substring(0, 10);
       }
-      for (i = 0; i < u.length; i++) o(r.user, ["user", u[i]])
-    }
-  }(window, document, "webengage");
 
 
-  if (true) {
-    console.log("WE_MOBILE_BRIDGE -> initialising mobile sdk");
-    (function(bridge) {
-      console.log("Calling bridge method ");
-      var type = Object.prototype.toString;
+      function parseDate(value) {
 
-      webengage.user.login = webengage.user.identify = function(id) {
-        console.log("calling login via bridge");
-        var loginScript = `webengage.user.login(id);`
-        window.cordova.InAppBrowser.executeScript(loginScript);
-       // TODO
-      };
-      webengage.user.logout = function() {
-        console.log("calling logout via bridge");
-       // TODO
-      };
+        var normalized = normalizeDate(value);
 
-      webengage.user.setAttribute = function(name, value) {
-        var attr = null;
+        if (!normalized) {
+          return null;
+        }
 
-        if (type.call(name) === '[object Object]') {
-          attr = name;
+        var parts = normalized.split("-");
+
+        if (parts.length !== 3) {
+          return null;
+        }
+
+        return new Date(
+          Number(parts[0]),
+          Number(parts[1]) - 1,
+          Number(parts[2])
+        );
+      }
+
+
+      function differenceInDays(date1, date2) {
+
+        var d1 = new Date(
+          date1.getFullYear(),
+          date1.getMonth(),
+          date1.getDate()
+        );
+
+        var d2 = new Date(
+          date2.getFullYear(),
+          date2.getMonth(),
+          date2.getDate()
+        );
+
+        var difference =
+          d1.getTime() - d2.getTime();
+
+        return Math.round(
+          difference / (1000 * 60 * 60 * 24)
+        );
+      }
+
+
+      /* =======================================================
+         CURRENT DATE
+      ======================================================= */
+
+      var today = getToday();
+
+      var normalizedStreakDate =
+        normalizeDate(streakDate);
+
+      var todayDate =
+        parseDate(today);
+
+      var lastCheckInDate =
+        parseDate(normalizedStreakDate);
+
+
+      /* =======================================================
+         DETERMINE CHECK-IN STATE
+      ======================================================= */
+
+      var alreadyCheckedIn =
+        normalizedStreakDate === today;
+
+
+      /* =======================================================
+         DETERMINE CURRENT 7-DAY POSITION
+         
+         This controls the visual 7-day calendar.
+
+         IMPORTANT:
+         A missed day is NOT treated as a completed day.
+         It is simply blank.
+      ======================================================= */
+
+      var currentDay = 1;
+
+
+      if (cycleStartDate) {
+
+        var startDate =
+          parseDate(cycleStartDate);
+
+        if (startDate) {
+
+          var daysFromStart =
+            differenceInDays(
+              todayDate,
+              startDate
+            );
+
+          currentDay =
+            daysFromStart + 1;
+
+        }
+
+      }
+
+
+      /*
+       * If there is no CycleStartDate,
+       * derive a reasonable visual position
+       * from the existing streak information.
+       */
+
+      if (!cycleStartDate) {
+
+        if (completedDays > 0) {
+
+          currentDay =
+            Math.min(
+              completedDays + 1,
+              TOTAL_DAYS
+            );
+
         } else {
-          attr = {};
-          attr[name] = value;
+
+          currentDay = 1;
+
         }
 
-        if (type.call(attr) === '[object Object]') {
-          // TODO
+      }
+
+
+      /*
+       * Keep currentDay within 1-7.
+       */
+
+      currentDay =
+        Math.max(
+          1,
+          Math.min(
+            TOTAL_DAYS,
+            currentDay
+          )
+        );
+
+
+      /* =======================================================
+         DETERMINE IF PREVIOUS DAY WAS MISSED
+         
+         Example:
+
+         Last check-in = Day 2
+         Today = Day 4
+
+         Difference = 2
+
+         Therefore Day 3 was missed.
+
+         We DO NOT reset TotalUpoints.
+      ======================================================= */
+
+      var gapDays = 0;
+
+      if (lastCheckInDate) {
+
+        gapDays =
+          differenceInDays(
+            todayDate,
+            lastCheckInDate
+          );
+
+      }
+
+
+      /* =======================================================
+         UI ELEMENTS
+      ======================================================= */
+
+      var totalPointsElement =
+        document.getElementById("totalPoints");
+
+      var bottomTotalPointsElement =
+        document.getElementById("bottomTotalPoints");
+
+      var rewardInfoElement =
+        document.getElementById("rewardInfo");
+
+      var milestoneValueElement =
+        document.getElementById("milestoneValue");
+
+      var milestoneProgressBar =
+        document.getElementById("milestoneProgressBar");
+
+      var milestoneMessage =
+        document.getElementById("milestoneMessage");
+
+      var daysContainer =
+        document.getElementById("daysContainer");
+
+      var checkinButton =
+        document.getElementById("checkinButton");
+
+      var closeButton =
+        document.getElementById("closeButton");
+
+
+      /* =======================================================
+         UPDATE TOTAL UI
+      ======================================================= */
+
+      function updateTotalUI() {
+
+        totalPointsElement.textContent =
+          totalUpoints;
+
+        bottomTotalPointsElement.textContent =
+          totalUpoints;
+
+      }
+
+
+      /* =======================================================
+         UPDATE MILESTONE UI
+      ======================================================= */
+
+      function updateMilestoneUI() {
+
+        var displayStreak =
+          Math.min(
+            streakCount,
+            TOTAL_DAYS
+          );
+
+        milestoneValueElement.textContent =
+          displayStreak + " / 7 days";
+
+        var progress =
+          (displayStreak / TOTAL_DAYS) * 100;
+
+        milestoneProgressBar.style.width =
+          progress + "%";
+
+
+        /*
+         * Milestone message
+         */
+
+        if (streakCount >= 7) {
+
+          milestoneMessage.innerHTML =
+            "🎉 <strong>7-day streak completed!</strong> " +
+            "Your total milestone reward is 800 UPoints.";
+
+          rewardInfoElement.textContent =
+            "7-day milestone unlocked — 800 UPoints";
+
         }
-      };
 
-      webengage.screen = function(name, data) {
-        if (arguments.length === 1 && type.call(name) === '[object Object]') {
-          data = name;
-          name = null;
+        else if (streakCount >= 4) {
+
+          milestoneMessage.innerHTML =
+            "🔥 <strong>4-day streak completed!</strong> " +
+            "Your total milestone reward is 400 UPoints.";
+
+          rewardInfoElement.textContent =
+            "4-day milestone unlocked — 400 UPoints";
+
         }
 
-       // TODO
-      };
+        else {
 
-      webengage.track = function(name, data) {
-       // TODO
-      };
+          var remaining =
+            4 - streakCount;
+
+          if (remaining < 1) {
+            remaining = 1;
+          }
+
+          milestoneMessage.innerHTML =
+            "Complete <strong>" +
+            remaining +
+            " more consecutive day" +
+            (remaining > 1 ? "s" : "") +
+            "</strong> to unlock 400 UPoints.";
+
+          rewardInfoElement.textContent =
+            alreadyCheckedIn
+              ? "Come back tomorrow to earn 50 UPoints"
+              : "Earn 50 UPoints today";
+
+        }
+
+      }
+
+
+      /* =======================================================
+         GET DAY STATUS
+         
+         POSSIBLE VALUES:
+
+         completed
+         missed
+         active
+         locked
+      ======================================================= */
+
+      function getDayStatus(dayNumber) {
+
+        /*
+         * Day is before current day.
+         */
+
+        if (dayNumber < currentDay) {
+
+          /*
+           * We don't have individual historical event
+           * dates stored here, so use completedDays and
+           * streak history to determine visual state.
+           *
+           * For the current 7-day cycle:
+           * completed days are represented by the
+           * successful check-in count.
+           */
+
+          var successfulDaysBefore =
+            completedDays;
+
+
+          /*
+           * If current user has completed N days,
+           * first N historical positions are completed
+           * unless a missed date exists.
+           *
+           * The missed-date logic below creates the blank
+           * position.
+           */
+
+          if (
+            lastCheckInDate &&
+            gapDays > 1
+          ) {
+
+            var missedDayPosition =
+              currentDay - gapDays;
+
+            if (
+              dayNumber === missedDayPosition
+            ) {
+
+              return "missed";
+
+            }
+
+          }
+
+
+          /*
+           * If we have enough completed days,
+           * mark this position completed.
+           */
+
+          if (
+            dayNumber <= successfulDaysBefore
+          ) {
+
+            return "completed";
+
+          }
+
+          /*
+           * Otherwise this day is blank.
+           */
+
+          return "missed";
+
+        }
+
+
+        /*
+         * Today
+         */
+
+        if (dayNumber === currentDay) {
+
+          return alreadyCheckedIn
+            ? "completed"
+            : "active";
+
+        }
+
+
+        /*
+         * Future
+         */
+
+        return "locked";
+
+      }
+
+
+      /* =======================================================
+         RENDER 7 DAYS
+      ======================================================= */
+
+      function renderDays() {
+
+        daysContainer.innerHTML = "";
+
+
+        for (
+          var i = 1;
+          i <= TOTAL_DAYS;
+          i++
+        ) {
+
+          var status =
+            getDayStatus(i);
+
+
+          var dayItem =
+            document.createElement("div");
+
+          dayItem.className =
+            "day-item " + status;
+
+
+          var dayCircle =
+            document.createElement("div");
+
+          dayCircle.className =
+            "day-circle";
+
+
+          /*
+           * Completed day
+           */
+
+          if (status === "completed") {
+
+            dayCircle.textContent = "✓";
+
+          }
+
+
+          /*
+           * Missed day
+           *
+           * Keep it BLANK.
+           */
+
+          else if (status === "missed") {
+
+            dayCircle.textContent = "";
+
+          }
+
+
+          /*
+           * Active day
+           */
+
+          else if (status === "active") {
+
+            dayCircle.textContent = i;
+
+          }
+
+
+          /*
+           * Future
+           */
+
+          else {
+
+            dayCircle.textContent = i;
+
+          }
+
+
+          var dayLabel =
+            document.createElement("div");
+
+          dayLabel.className =
+            "day-label";
+
+          dayLabel.textContent =
+            "Day " + i;
+
+
+          var dayPoints =
+            document.createElement("div");
+
+          dayPoints.className =
+            "day-points";
+
+
+          if (status === "completed") {
+
+            dayPoints.textContent =
+              "+" + DAILY_POINTS;
+
+          }
+
+          else {
+
+            /*
+             * Missed / locked / active
+             * do not show reward as completed.
+             */
+
+            dayPoints.textContent =
+              "";
+
+          }
+
+
+          dayItem.appendChild(
+            dayCircle
+          );
+
+          dayItem.appendChild(
+            dayLabel
+          );
+
+          dayItem.appendChild(
+            dayPoints
+          );
+
+          daysContainer.appendChild(
+            dayItem
+          );
+
+        }
+
+      }
+
+
+      /* =======================================================
+         UPDATE CTA
+      ======================================================= */
+
+      function updateButton() {
+
+        if (alreadyCheckedIn) {
+
+          checkinButton.textContent =
+            "✓ Today's 50 UPoints Claimed";
+
+          checkinButton.classList.add(
+            "completed-btn"
+          );
+
+          checkinButton.disabled = true;
+
+        }
+
+        else {
+
+          checkinButton.textContent =
+            "Check In & Earn 50 UPoints";
+
+          checkinButton.classList.remove(
+            "completed-btn"
+          );
+
+          checkinButton.disabled = false;
+
+        }
+
+      }
+
+
+      /* =======================================================
+         TRACK WEBENGAGE EVENT
+      ======================================================= */
+
+      function trackEvent(
+        eventName,
+        payload
+      ) {
+
+        try {
+
+          if (
+            typeof weNotification !== "undefined" &&
+            typeof weNotification.trackEvent === "function"
+          ) {
+
+            weNotification.trackEvent(
+              eventName,
+              JSON.stringify(payload || {})
+            );
+
+          }
+
+        }
+        catch (error) {
+
+          console.log(
+            "WebEngage tracking error:",
+            error
+          );
+
+        }
+
+      }
+
+
+      /* =======================================================
+         SAVE USER ATTRIBUTES
+         
+         NOTE:
+         This JSON is generated separately below as the
+         WebEngage API payload.
+
+         The notification itself should update the attributes
+         using your WebEngage API / journey action.
+      ======================================================= */
+
+      function buildUpdatedData() {
+
+        return {
+
+          StreakCount: streakCount,
+
+          StreakDate: streakDate,
+
+          CompletedDays: completedDays,
+
+          TotalUpoints: totalUpoints,
+
+          CycleStartDate: cycleStartDate
+
+        };
+
+      }
+
+
+      /* =======================================================
+         CHECK-IN
+      ======================================================= */
+
+      function handleCheckIn() {
+
+        /*
+         * Prevent duplicate check-in.
+         */
+
+        if (alreadyCheckedIn) {
+
+          return;
+
+        }
+
+
+        /*
+         * Disable immediately so multiple clicks
+         * cannot create multiple rewards.
+         */
+
+        checkinButton.disabled = true;
+
+
+        /* =====================================================
+           CONSECUTIVE STREAK LOGIC
+
+           If yesterday was completed:
+             streak + 1
+
+           If yesterday was NOT completed:
+             new consecutive streak = 1
+
+           IMPORTANT:
+           TotalUpoints is NEVER reset here.
+        ===================================================== */
+
+        if (
+          lastCheckInDate &&
+          gapDays === 1
+        ) {
+
+          streakCount =
+            streakCount + 1;
+
+        }
+
+        else {
+
+          /*
+           * A missed day breaks ONLY the consecutive streak.
+           *
+           * Previous total points remain untouched.
+           */
+
+          streakCount = 1;
+
+        }
+
+
+        /* =====================================================
+           ADD DAILY POINTS
+
+           EVERY VALID CHECK-IN:
+             +50 UPoints
+        ===================================================== */
+
+        totalUpoints =
+          totalUpoints + DAILY_POINTS;
+
+
+        /* =====================================================
+           COMPLETED DAYS
+
+           A successful check-in counts as one completed
+           day in the 7-day challenge.
+        ===================================================== */
+
+        completedDays =
+          completedDays + 1;
+
+
+        /*
+         * Do not allow completedDays to exceed 7.
+         */
+
+        completedDays =
+          Math.min(
+            completedDays,
+            TOTAL_DAYS
+          );
+
+
+        /* =====================================================
+           MILESTONE 4 DAYS
+
+           When current CONSECUTIVE streak reaches 4:
+
+             Base points = whatever user has accumulated.
+
+             Minimum total milestone reward = 400.
+
+           Example:
+
+             50 + 50 + 50 + 50 = 200
+
+             milestone → 400
+        ===================================================== */
+
+        if (
+          streakCount === 4 &&
+          totalUpoints < FOUR_DAY_REWARD
+        ) {
+
+          totalUpoints =
+            FOUR_DAY_REWARD;
+
+        }
+
+
+        /* =====================================================
+           MILESTONE 7 DAYS
+
+           When current CONSECUTIVE streak reaches 7:
+
+             Minimum total milestone reward = 800.
+        ===================================================== */
+
+        if (
+          streakCount === 7 &&
+          totalUpoints < SEVEN_DAY_REWARD
+        ) {
+
+          totalUpoints =
+            SEVEN_DAY_REWARD;
+
+        }
+
+
+        /*
+         * Store today's date as the last successful
+         * check-in date.
+         */
+
+        streakDate =
+          today;
+
+
+        /*
+         * If this is the first-ever check-in,
+         * initialize the 7-day cycle.
+         */
+
+        if (!cycleStartDate) {
+
+          cycleStartDate =
+            today;
+
+        }
+
+
+        /* =====================================================
+           TRACK EVENT
+        ===================================================== */
+
+        trackEvent(
+          "daily_coin_claim",
+          {
+            day: currentDay,
+
+            dailyPoints: DAILY_POINTS,
+
+            streakCount: streakCount,
+
+            completedDays: completedDays,
+
+            totalUpoints: totalUpoints,
+
+            streakDate: streakDate,
+
+            cycleStartDate: cycleStartDate,
+
+            milestone:
+              streakCount >= 7
+                ? "7_day"
+                : (
+                    streakCount >= 4
+                      ? "4_day"
+                      : null
+                  )
+          }
+        );
+
+
+        /* =====================================================
+           UPDATE UI
+        ===================================================== */
+
+        updateTotalUI();
+
+        updateMilestoneUI();
+
+
+        /*
+         * Mark today's button as completed.
+         */
+
+        checkinButton.textContent =
+          "✓ Today's 50 UPoints Claimed";
+
+        checkinButton.classList.add(
+          "completed-btn"
+        );
+
+        checkinButton.disabled = true;
+
+
+        /*
+         * Re-render days.
+         */
+
+        renderDays();
+
+
+        /* =====================================================
+           WEBENGAGE CTA
+        ===================================================== */
+
+        try {
+
+          if (
+            typeof weNotification !== "undefined" &&
+            typeof weNotification.click === "function"
+          ) {
+
+            weNotification.click(
+              "",
+              "",
+              ""
+            );
+
+          }
+
+        }
+        catch (error) {
+
+          console.log(
+            "WebEngage click error:",
+            error
+          );
+
+        }
+
+      }
+
+
+      /* =======================================================
+         CLOSE
+      ======================================================= */
+
+      closeButton.addEventListener(
+        "click",
+        function () {
+
+          try {
+
+            if (
+              typeof weNotification !== "undefined" &&
+              typeof weNotification.close === "function"
+            ) {
+
+              weNotification.close();
+
+            }
+
+          }
+          catch (error) {
+
+            console.log(
+              "WebEngage close error:",
+              error
+            );
+
+          }
+
+        }
+      );
+
+
+      /* =======================================================
+         CTA EVENT
+      ======================================================= */
+
+      checkinButton.addEventListener(
+        "click",
+        handleCheckIn
+      );
+
+
+      /* =======================================================
+         INITIAL RENDER
+      ======================================================= */
+
+      updateTotalUI();
+
+      updateMilestoneUI();
+
+      renderDays();
+
+      updateButton();
+
+
+      /* =======================================================
+         VIEW EVENT
+      ======================================================= */
+
+      trackEvent(
+        "daily_coin_view",
+        {
+          streakCount: streakCount,
+
+          completedDays: completedDays,
+
+          totalUpoints: totalUpoints,
+
+          streakDate: streakDate,
+
+          cycleStartDate: cycleStartDate
+        }
+      );
 
     })();
-
-   } 
-  //else {
-  //   console.log("WE_MOBILE_BRIDGE -> initialising web sdk")
-  //   setTimeout(function() {
-  //     var f = document.createElement("script"),
-  //       d = document.getElementById("_webengage_script_tag");
-  //     f.type = "text/javascript",
-  //       f.async = !0,
-  //       f.src = ("https:" == window.location.protocol ? "https://ssl.widgets.webengage.com" : "http://cdn.widgets.webengage.com") + "/js/webengage-min-v-6.0.js",
-  //       d.parentNode.insertBefore(f, d)
-  //   });
-
-  // }
-
- // webengage.init("~2024bb40");
+  

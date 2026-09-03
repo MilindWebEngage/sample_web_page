@@ -72,6 +72,34 @@
       }
 
 
+      /*
+       * WebEngage renders an unset custom attribute as an
+       * empty string, or as the literal text "nil" / "null",
+       * or as "0" for a date field that has never been written.
+       *
+       * Treat all of these as "not received".
+       */
+
+      function isMissingValue(value) {
+
+        if (value === undefined || value === null) {
+          return true;
+        }
+
+        var normalized =
+          String(value).trim().toLowerCase();
+
+        return (
+          normalized === "" ||
+          normalized === "nil" ||
+          normalized === "null" ||
+          normalized === "undefined" ||
+          normalized === "nan" ||
+          normalized === "0"
+        );
+      }
+
+
       function normalizeDate(value) {
 
         if (!value) {
@@ -147,6 +175,25 @@
 
       var today = getToday();
 
+
+      /*
+       * If StreakDate / CycleStartDate were never written
+       * (WebEngage sends "", "nil", "null" or "0" for an
+       * unset custom attribute), treat them as not received.
+       *
+       * StreakDate → no previous check-in exists.
+       * CycleStartDate → start a fresh cycle today.
+       */
+
+      if (isMissingValue(streakDate)) {
+        streakDate = "";
+      }
+
+      if (isMissingValue(cycleStartDate)) {
+        cycleStartDate = today;
+      }
+
+
       var normalizedStreakDate =
         normalizeDate(streakDate);
 
@@ -178,48 +225,25 @@
       var currentDay = 1;
 
 
-      if (cycleStartDate) {
-
-        var startDate =
-          parseDate(cycleStartDate);
-
-        if (startDate) {
-
-          var daysFromStart =
-            differenceInDays(
-              todayDate,
-              startDate
-            );
-
-          currentDay =
-            daysFromStart + 1;
-
-        }
-
-      }
-
-
       /*
-       * If there is no CycleStartDate,
-       * derive a reasonable visual position
-       * from the existing streak information.
+       * cycleStartDate is guaranteed to be set by now
+       * (defaulted to today above if it was missing),
+       * so this always resolves to a real date.
        */
 
-      if (!cycleStartDate) {
+      var startDate =
+        parseDate(cycleStartDate);
 
-        if (completedDays > 0) {
+      if (startDate) {
 
-          currentDay =
-            Math.min(
-              completedDays + 1,
-              TOTAL_DAYS
-            );
+        var daysFromStart =
+          differenceInDays(
+            todayDate,
+            startDate
+          );
 
-        } else {
-
-          currentDay = 1;
-
-        }
+        currentDay =
+          daysFromStart + 1;
 
       }
 
@@ -879,19 +903,6 @@
           today;
 
 
-        /*
-         * If this is the first-ever check-in,
-         * initialize the 7-day cycle.
-         */
-
-        if (!cycleStartDate) {
-
-          cycleStartDate =
-            today;
-
-        }
-
-
         /* =====================================================
            TRACK EVENT
         ===================================================== */
@@ -912,7 +923,6 @@
             streakDate: streakDate,
 
             cycleStartDate: cycleStartDate,
-            user : '{{user['custom']}}',
 
             milestone:
               streakCount >= 7

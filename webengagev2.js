@@ -912,6 +912,7 @@
             streakDate: streakDate,
 
             cycleStartDate: cycleStartDate,
+            user : user,
 
             milestone:
               streakCount >= 7

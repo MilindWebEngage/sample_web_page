@@ -77,6 +77,11 @@
        * empty string, or as the literal text "nil" / "null",
        * or as "0" for a date field that has never been written.
        *
+       * If the attribute has NEVER been set on the user's
+       * profile, WebEngage leaves the liquid template
+       * completely unresolved instead, e.g. the literal text
+       * {{user["custom"]["CycleStartDate"]}}.
+       *
        * Treat all of these as "not received".
        */
 
@@ -86,8 +91,15 @@
           return true;
         }
 
+        var stringValue =
+          String(value);
+
+        if (stringValue.indexOf("{{") !== -1) {
+          return true;
+        }
+
         var normalized =
-          String(value).trim().toLowerCase();
+          stringValue.trim().toLowerCase();
 
         return (
           normalized === "" ||

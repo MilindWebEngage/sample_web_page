@@ -174,21 +174,59 @@
           return "";
         }
 
-        value = String(value);
+        var stringValue =
+          String(value).trim();
+
+        if (!stringValue) {
+          return "";
+        }
 
         /*
-         * Handle WebEngage ISO date values.
-         * Example:
+         * Fast path: our own "YYYY-MM-DD" format, or an
+         * ISO datetime that starts with it, e.g.
          * 2026-09-03T12:30:00+0530
          */
 
-        if (value.indexOf("T") !== -1) {
+        var isoMatch =
+          stringValue.match(/^(\d{4})-(\d{2})-(\d{2})/);
 
-          return value.split("T")[0];
+        if (isoMatch) {
+
+          return (
+            isoMatch[1] + "-" + isoMatch[2] + "-" + isoMatch[3]
+          );
 
         }
 
-        return value.substring(0, 10);
+        /*
+         * Fallback: WebEngage renders a Date-type custom
+         * attribute using the full JS Date.toString()
+         * format, e.g.
+         * "Thu Sep 03 2026 13:16:27 GMT+0000
+         * (Coordinated Universal Time)"
+         *
+         * Let the native Date parser handle that (and any
+         * other format it understands) instead of assuming
+         * one fixed shape.
+         */
+
+        var parsed =
+          new Date(stringValue);
+
+        if (isNaN(parsed.getTime())) {
+          return "";
+        }
+
+        var year =
+          parsed.getFullYear();
+
+        var month =
+          String(parsed.getMonth() + 1).padStart(2, "0");
+
+        var day =
+          String(parsed.getDate()).padStart(2, "0");
+
+        return year + "-" + month + "-" + day;
       }
 
 

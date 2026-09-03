@@ -1062,32 +1062,50 @@
 
         /* =====================================================
            WEBENGAGE CTA
+
+           weNotification.click() typically dismisses the
+           notification right away, tearing down this webview.
+
+           If that happens before the "daily_coin_claim"
+           trackEvent() call above has actually flushed over
+           the network, the claim event gets silently dropped
+           even though the UI already updated.
+
+           Deferring this call by a tick gives trackEvent()
+           a chance to complete first.
         ===================================================== */
 
-        try {
+        setTimeout(
+          function () {
 
-          if (
-            typeof weNotification !== "undefined" &&
-            typeof weNotification.click === "function"
-          ) {
+            try {
 
-            weNotification.click(
-              "",
-              "",
-              ""
-            );
+              if (
+                typeof weNotification !== "undefined" &&
+                typeof weNotification.click === "function"
+              ) {
 
-          }
+                weNotification.click(
+                  "",
+                  "",
+                  ""
+                );
 
-        }
-        catch (error) {
+              }
 
-          console.log(
-            "WebEngage click error:",
-            error
-          );
+            }
+            catch (error) {
 
-        }
+              console.log(
+                "WebEngage click error:",
+                error
+              );
+
+            }
+
+          },
+          300
+        );
 
       }
 

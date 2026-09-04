@@ -89,10 +89,11 @@
      4 custom attributes:
 
        CycleStartDate  - date the current cycle began
-       VisitedDays     - array of day positions, e.g. [1,2,4]
-                          (NOT dates - see fix #2 above). Sent
-                          as a real array; also accepted back
-                          as a JSON array string ("[1,2,4]") or
+       VisitedDays     - array of day positions as STRINGS,
+                          e.g. ["1","2","4"] (NOT dates - see
+                          fix #2 above; backend expects a
+                          string array). Also accepted back as
+                          a JSON array string ("[1,2,4]") or
                           plain CSV ("1,2,4") for round-tripping
                           through wherever it ends up persisted.
        TotalPoints     - running total across the cycle
@@ -512,7 +513,7 @@
   function buildUpdatedData() {
     return {
       CycleStartDate: toISO(cycleStartDate),
-      VisitedDays: visitedDays.slice(),
+      VisitedDays: visitedDays.map(function (d) { return String(d); }),
       TotalPoints: totalPoints,
       LastStreakDate: lastStreakDateISO()
     };

@@ -89,7 +89,12 @@
      4 custom attributes:
 
        CycleStartDate  - date the current cycle began
-       VisitedDays     - e.g. "1,2,4"  (day positions, NOT dates)
+       VisitedDays     - array of day positions, e.g. [1,2,4]
+                          (NOT dates - see fix #2 above). Sent
+                          as a real array; also accepted back
+                          as a JSON array string ("[1,2,4]") or
+                          plain CSV ("1,2,4") for round-tripping
+                          through wherever it ends up persisted.
        TotalPoints     - running total across the cycle
        LastStreakDate  - calendar date of the most recent
                           check-in. Not needed to compute
@@ -212,8 +217,9 @@
   /* =======================================================
      VISITED-DAYS HELPERS
 
-     Stored as a comma-separated list of day POSITIONS
-     (1..totalDays), never as dates.
+     An array of day POSITIONS (1..totalDays), never dates.
+     Accepts a real array, a JSON array string, or plain CSV
+     on the way in; always emitted as a real array.
   ======================================================= */
 
   function parseVisitedDays(raw) {
@@ -222,16 +228,15 @@
       return [];
     }
 
-    return String(raw)
-      .split(",")
+    var items = Array.isArray(raw)
+      ? raw
+      : String(raw).replace(/[\[\]"]/g, "").split(",");
+
+    return items
       .map(function (part) { return parseInt(part, 10); })
       .filter(function (n) { return !isNaN(n) && n >= 1 && n <= CONFIG.totalDays; })
       .filter(function (n, index, arr) { return arr.indexOf(n) === index; })
       .sort(function (a, b) { return a - b; });
-  }
-
-  function serializeVisitedDays(days) {
-    return days.join(",");
   }
 
 
@@ -507,7 +512,7 @@
   function buildUpdatedData() {
     return {
       CycleStartDate: toISO(cycleStartDate),
-      VisitedDays: serializeVisitedDays(visitedDays),
+      VisitedDays: visitedDays.slice(),
       TotalPoints: totalPoints,
       LastStreakDate: lastStreakDateISO()
     };

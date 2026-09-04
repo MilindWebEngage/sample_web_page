@@ -55,11 +55,25 @@
     pointsLabel: "U-Points",
 
     // Any number of milestones. When the CURRENT consecutive
-    // streak first reaches `day`, total points are bumped up
-    // to at least `points` (never reduced).
+    // streak first reaches `day`, `bonus` points are added on
+    // top of whatever's already accumulated.
+    //
+    // This is deliberately additive rather than "floor to X",
+    // because TotalPoints carries over across cycles (it's
+    // never reset) - a floor only ever helps once; after the
+    // first cycle the total is already past it and the reward
+    // silently stops firing. Additive keeps working every cycle.
+    //
+    // NOTE: this client-side total is only an optimistic
+    // preview for the current session's UI. The authoritative
+    // TotalPoints is computed server-side by the WebEngage
+    // journey (see journey template) from the profile's
+    // previously-persisted TotalPoints, so it can't be
+    // double-counted or tampered with client-side - the next
+    // view picks up the real number.
     milestones: [
-      { day: 4, points: 400, badge: "X2" },
-      { day: 7, points: 800, badge: null }
+      { day: 4, bonus: 200, badge: "X2" },
+      { day: 7, bonus: 250, badge: "GET 800" }
     ],
 
     // The final configured day is visually called out as the
@@ -72,11 +86,19 @@
   /* =======================================================
      WEBENGAGE USER DATA
 
-     Only 3 custom attributes are needed:
+     4 custom attributes:
 
        CycleStartDate  - date the current cycle began
        VisitedDays     - e.g. "1,2,4"  (day positions, NOT dates)
        TotalPoints     - running total across the cycle
+       LastStreakDate  - calendar date of the most recent
+                          check-in. Not needed to compute
+                          anything in THIS file (VisitedDays +
+                          CycleStartDate already fully determine
+                          UI state) - but the backend journey
+                          uses it as a duplicate-checkin guard
+                          (see journey-attribute-update.liquid),
+                          so it must stay accurate.
   ======================================================= */
 
   var customData = window.WE_CUSTOM_DATA || {};
@@ -246,6 +268,13 @@
     return d;
   }
 
+  function lastStreakDateISO() {
+    if (visitedDays.length === 0) {
+      return "";
+    }
+    return toISO(dateForDay(visitedDays[visitedDays.length - 1]));
+  }
+
   /*
    * Length of the consecutive run of visited days trailing
    * up to "today" (or up to yesterday if today isn't checked
@@ -297,6 +326,7 @@
   var checkinButtonEl = document.getElementById("checkinButton");
   var closeButtonEl = document.getElementById("closeButton");
   var maxPointsEl = document.getElementById("maxPoints");
+  var cardEl = document.querySelector(".card");
 
 
   /* =======================================================
@@ -304,9 +334,10 @@
   ======================================================= */
 
   function maxMilestonePoints() {
-    return CONFIG.milestones.reduce(function (max, m) {
-      return Math.max(max, m.points);
-    }, CONFIG.dailyPoints * CONFIG.totalDays);
+    var totalBonus = CONFIG.milestones.reduce(function (sum, m) {
+      return sum + m.bonus;
+    }, 0);
+    return CONFIG.dailyPoints * CONFIG.totalDays + totalBonus;
   }
 
   function renderHeader() {
@@ -348,7 +379,7 @@
 
       var value = document.createElement("div");
       value.className = "milestone-value";
-      value.textContent = m.badge ? m.badge : ("GET " + m.points);
+      value.textContent = m.badge;
 
       var sub = document.createElement("div");
       sub.className = "milestone-sub";
@@ -424,6 +455,30 @@
     }
   }
 
+  /*
+   * Safety net so the widget never has to scroll: if the card
+   * (at its natural size) is taller than the viewport - a short
+   * phone, a landscape orientation, a cramped in-app webview -
+   * scale it down just enough to fit. On most screens the
+   * content already fits and this is a no-op (scale 1).
+   */
+  function fitCardToViewport() {
+
+    if (!cardEl) {
+      return;
+    }
+
+    cardEl.style.transform = "scale(1)";
+
+    var availableHeight = window.innerHeight - 20;
+    var cardHeight = cardEl.getBoundingClientRect().height;
+
+    if (cardHeight > availableHeight) {
+      var scale = Math.max(0.5, availableHeight / cardHeight);
+      cardEl.style.transform = "scale(" + scale + ")";
+    }
+  }
+
   function renderAll() {
     renderHeader();
     renderPoints();
@@ -431,6 +486,7 @@
     renderProgress();
     renderDays();
     renderButton();
+    fitCardToViewport();
   }
 
 
@@ -452,7 +508,8 @@
     return {
       CycleStartDate: toISO(cycleStartDate),
       VisitedDays: serializeVisitedDays(visitedDays),
-      TotalPoints: totalPoints
+      TotalPoints: totalPoints,
+      LastStreakDate: lastStreakDateISO()
     };
   }
 
@@ -492,8 +549,8 @@
     var streak = getCurrentStreak();
 
     CONFIG.milestones.forEach(function (m) {
-      if (streak === m.day && totalPoints < m.points) {
-        totalPoints = m.points;
+      if (streak === m.day) {
+        totalPoints += m.bonus;
       }
     });
 
@@ -530,6 +587,9 @@
   }
 
   checkinButtonEl.addEventListener("click", handleCheckIn);
+
+  window.addEventListener("resize", fitCardToViewport);
+  window.addEventListener("orientationchange", fitCardToViewport);
 
   renderAll();
 

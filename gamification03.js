@@ -11,14 +11,13 @@
    visit - every read below treats that as "no cycle yet".
 
    On check-in click we track CONFIG.eventName ("daily_checkin_claim")
-   with a payload shaped so the journey's liquid can read it as:
+   with a flat payload the journey's liquid can read as:
 
-     event["custom"]["daily_checkin_claim"]["custom"]["event_time"]
-     event["custom"]["daily_checkin_claim"]["custom"]["cycle_start_date"]
+     event["custom"]["event_time"]
+     event["custom"]["cycle_start_date"]
 
    i.e. the event's custom data must be:
-     { daily_checkin_claim: { event_time: "...", cycle_start_date: "..." } }
-   (the wrapper key is the event name itself - see EVENT_PAYLOAD_KEY.WRAPPER)
+     { event_time: "...", cycle_start_date: "..." }
 
    The server (backend-logic.txt) recomputes TotalPoints /
    StreakCount / VisitedDays authoritatively from these two
@@ -65,13 +64,10 @@
   };
 
   /*
-   * Event custom-data shape, so the journey's liquid can read it as
-   * event["custom"][CONFIG.eventName]["custom"]["event_time"] / ["cycle_start_date"].
-   * The wrapper key is the event name itself - kept in sync with
-   * CONFIG.eventName so the two can never drift apart.
+   * Event custom-data keys, flat on the event - so the journey's
+   * liquid can read them as event["custom"]["event_time"] / ["cycle_start_date"].
    */
   var EVENT_PAYLOAD_KEY = {
-    WRAPPER: CONFIG.eventName,
     EVENT_TIME: "event_time",
     CYCLE_START_DATE: "cycle_start_date"
   };
@@ -369,9 +365,9 @@
   }
 
   /*
-   * Shaped so the journey's liquid can read it as
-   * event["custom"][CONFIG.eventName]["custom"]["event_time"]
-   * and ["cycle_start_date"] - see backend-logic.txt.
+   * Flat, so the journey's liquid can read it as
+   * event["custom"]["event_time"] and ["cycle_start_date"]
+   * - see backend-logic.txt.
    *
    * cycle_start_date always carries an actual date - on a user's very
    * first check-in that's our own CONFIG.defaultCycleStartDate, not an
@@ -380,9 +376,8 @@
    */
   function buildClaimEventPayload() {
     var payload = {};
-    payload[EVENT_PAYLOAD_KEY.WRAPPER] = {};
-    payload[EVENT_PAYLOAD_KEY.WRAPPER][EVENT_PAYLOAD_KEY.EVENT_TIME] = new Date().toISOString();
-    payload[EVENT_PAYLOAD_KEY.WRAPPER][EVENT_PAYLOAD_KEY.CYCLE_START_DATE] = toISO(cycleStartDate);
+    payload[EVENT_PAYLOAD_KEY.EVENT_TIME] = new Date().toISOString();
+    payload[EVENT_PAYLOAD_KEY.CYCLE_START_DATE] = toISO(cycleStartDate);
     return payload;
   }
 

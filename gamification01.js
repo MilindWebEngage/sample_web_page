@@ -38,7 +38,21 @@
       { day: 4, bonus: 200 },
       { day: 7, bonus: 250 }
     ],
-    eventName: "daily_checkin_claim"
+    eventName: "daily_checkin_claim",
+
+    /*
+     * Fixed, shared day-1 for every user - used when the profile
+     * doesn't have a CycleStartDate yet (first-ever visit). Everyone's
+     * 7-day grid is pinned to this same calendar date rather than to
+     * whenever they personally first check in; someone checking in for
+     * the first time after this date just starts partway through
+     * (e.g. on "day 4"). Single source of truth for that default - it
+     * drives both the very first render's grid/CTA AND the
+     * cycle_start_date sent on check-in (see buildClaimEventPayload),
+     * so the server just persists what we decided here instead of
+     * applying its own empty-value fallback. Format: "YYYY-MM-DD".
+     */
+    defaultCycleStartDate: "2026-09-10"
   };
 
   /* WebEngage custom-attribute keys - the schema backend-logic.txt reads/writes. */
@@ -229,8 +243,7 @@
 
   var today = new Date();
 
-  var hasCycleStarted = !isMissingValue(customData[ATTR.CYCLE_START_DATE]);
-  var cycleStartDate = parseFlexibleDate(customData[ATTR.CYCLE_START_DATE]) || startOfDay(today);
+  var cycleStartDate = parseFlexibleDate(customData[ATTR.CYCLE_START_DATE]) || parseFlexibleDate(CONFIG.defaultCycleStartDate);
 
   var visitedDays = parseVisitedDays(customData[ATTR.VISITED_DAYS]);
   var totalPoints = Number(customData[ATTR.TOTAL_POINTS]) || 0;
@@ -360,15 +373,16 @@
    * event["custom"][CONFIG.eventName]["custom"]["event_time"]
    * and ["cycle_start_date"] - see backend-logic.txt.
    *
-   * cycle_start_date is sent empty on a user's very first
-   * check-in (no CycleStartDate persisted yet); the server
-   * then defaults it to event_time itself.
+   * cycle_start_date always carries an actual date - on a user's very
+   * first check-in that's our own CONFIG.defaultCycleStartDate, not an
+   * empty string, so WE decide the cycle's start date rather than
+   * leaving it to the server's own empty-value fallback.
    */
   function buildClaimEventPayload() {
     var payload = {};
     payload[EVENT_PAYLOAD_KEY.WRAPPER] = {};
     payload[EVENT_PAYLOAD_KEY.WRAPPER][EVENT_PAYLOAD_KEY.EVENT_TIME] = new Date().toISOString();
-    payload[EVENT_PAYLOAD_KEY.WRAPPER][EVENT_PAYLOAD_KEY.CYCLE_START_DATE] = hasCycleStarted ? toISO(cycleStartDate) : "";
+    payload[EVENT_PAYLOAD_KEY.WRAPPER][EVENT_PAYLOAD_KEY.CYCLE_START_DATE] = toISO(cycleStartDate);
     return payload;
   }
 

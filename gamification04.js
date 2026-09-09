@@ -72,6 +72,17 @@
     CYCLE_START_DATE: "cycle_start_date"
   };
 
+  /*
+   * WebEngage's own marker for a Date-typed custom value - required so
+   * the backend parses event_time as a date rather than a plain string.
+   * Expected shape: "'~t'yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", i.e. this
+   * prefix directly followed by a Date.prototype.toISOString() value
+   * (which already produces exactly that yyyy-MM-ddTHH:mm:ss.sssZ shape).
+   * cycle_start_date is a plain "YYYY-MM-DD" date-only string and does
+   * NOT get this prefix.
+   */
+  var WE_DATE_PREFIX = "~t";
+
   /* index.html element ids. */
   var ELEMENT_ID = {
     POINTS_VALUE: "pointsVal",
@@ -376,7 +387,7 @@
    */
   function buildClaimEventPayload() {
     var payload = {};
-    payload[EVENT_PAYLOAD_KEY.EVENT_TIME] = new Date().toISOString();
+    payload[EVENT_PAYLOAD_KEY.EVENT_TIME] = WE_DATE_PREFIX + new Date().toISOString();
     payload[EVENT_PAYLOAD_KEY.CYCLE_START_DATE] = toISO(cycleStartDate);
     return payload;
   }

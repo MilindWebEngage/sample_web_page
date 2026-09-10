@@ -7,23 +7,43 @@
      TotalPoints, CycleStartDate, LastStreakDate,
      StreakCount, VisitedDays (int positions, e.g. [1,2,4])
 
-   All of these can be missing/empty on a user's very first
-   visit - every read below treats that as "no cycle yet".
+   These no longer live as flat user custom attributes - they're
+   nested inside a Map-type user attribute (currently "Age", a
+   placeholder attribute used for testing) keyed by this campaign's
+   id, so several campaigns can share that one attribute:
+
+     user.custom.Age = { "abcd": { TotalPoints: 50, ... }, "other-campaign": {...} }
+
+   The campaign id ("abcd") is hardcoded in index.html only (as
+   WE_CUSTOM_DATA.CampaignId) - this file has no copy of its own, it
+   just reads that value, so the two files can't drift out of sync.
+
+   index.html passes the WHOLE Age map through as one JSON blob
+   (WE_CUSTOM_DATA.CampaignData) rather than indexing into it - a
+   single-level attribute read is the pattern already proven safe for
+   an unset attribute, whereas indexing a second level ("abcd") into a
+   possibly-never-set Age isn't confirmed safe in that rendering
+   context. This file narrows it down to just this campaign's own
+   entry itself (see campaignMap/campaignData below), where a missing
+   Age attribute, a missing entry for this campaign id, missing
+   individual fields, or the tag not resolving at all all collapse to
+   the same "no cycle yet" handling via parseCampaignMap().
 
    On check-in click we track CONFIG.eventName ("daily_checkin_claim")
    with a flat payload the journey's liquid can read as:
 
      event["custom"]["event_time"]
      event["custom"]["cycle_start_date"]
+     event["custom"]["campaign_id"]
 
    i.e. the event's custom data must be:
-     { event_time: "...", cycle_start_date: "..." }
+     { event_time: "...", cycle_start_date: "...", campaign_id: "..." }
 
    The server (backend-logic.txt) recomputes TotalPoints /
-   StreakCount / VisitedDays authoritatively from these two
-   values plus the profile's previously-persisted attributes;
-   what we update locally below is only an optimistic preview
-   for this session - the next load picks up the real numbers.
+   StreakCount / VisitedDays authoritatively from these values plus
+   the profile's previously-persisted per-campaign data; what we
+   update locally below is only an optimistic preview for this
+   session - the next load picks up the real numbers.
    ========================================================= */
 
 (function () {
@@ -54,7 +74,7 @@
     defaultCycleStartDate: "2026-09-10"
   };
 
-  /* WebEngage custom-attribute keys - the schema backend-logic.txt reads/writes. */
+  /* Field keys within this campaign's own entry - the schema backend-logic.txt reads/writes. */
   var ATTR = {
     CYCLE_START_DATE: "CycleStartDate",
     VISITED_DAYS: "VisitedDays",
@@ -64,12 +84,31 @@
   };
 
   /*
+   * WE_CUSTOM_DATA fields (see index.html). CampaignId is the single
+   * source of truth for this campaign's id - hardcoded only in
+   * index.html's liquid tags, read here rather than duplicated as a
+   * separate CONFIG value. CampaignData is the WHOLE Map-type "Age"
+   * attribute (every campaign's entry, not just this one) - index.html
+   * deliberately doesn't narrow it down to user["custom"]["Age"][CampaignId]
+   * itself, since a single-level attribute read is the pattern already
+   * proven safe for an unset attribute, while indexing a second level
+   * into a possibly-never-set Age isn't confirmed safe in that
+   * rendering context. This file does that narrowing in plain JS
+   * instead (see campaignData below), where a missing key just behaves
+   * predictably as undefined.
+   */
+  var CAMPAIGN_ID_KEY = "CampaignId";
+  var CAMPAIGN_DATA_KEY = "CampaignData";
+
+  /*
    * Event custom-data keys, flat on the event - so the journey's
-   * liquid can read them as event["custom"]["event_time"] / ["cycle_start_date"].
+   * liquid can read them as event["custom"]["event_time"] / ["cycle_start_date"]
+   * / ["campaign_id"].
    */
   var EVENT_PAYLOAD_KEY = {
     EVENT_TIME: "event_time",
-    CYCLE_START_DATE: "cycle_start_date"
+    CYCLE_START_DATE: "cycle_start_date",
+    CAMPAIGN_ID: "campaign_id"
   };
 
   /*
@@ -174,11 +213,35 @@
 
     var s = String(value).trim();
 
+    if (s.indexOf(WE_DATE_PREFIX) === 0) {
+      s = s.slice(WE_DATE_PREFIX.length);
+    }
+
     var epoch = s.match(/^\d{10,13}$/);
     if (epoch) {
       var ms = epoch[0].length === 13 ? Number(epoch[0]) : Number(epoch[0]) * 1000;
       var epochDate = new Date(ms);
       return isNaN(epochDate.getTime()) ? null : epochDate;
+    }
+
+    /*
+     * A full timestamp with a time-of-day AND an explicit UTC/offset
+     * marker (e.g. "2026-09-09T18:30:00Z" - exactly what backend-logic.txt
+     * now persists for CycleStartDate) is a genuine instant, not a bare
+     * calendar date. It has to go through the native parser so the
+     * UTC/offset correctly resolves to OUR local calendar day - reading
+     * just its leading Y-M-D digits (like the bare-date branch below)
+     * silently mis-dates it by a day whenever the instant's UTC date
+     * differs from its local one, which is guaranteed whenever the
+     * account timezone is ahead of UTC (e.g. IST is UTC+5:30, so
+     * "midnight IST" is always stored as 18:30 UTC the PREVIOUS day).
+     */
+    var hasExplicitZone = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}.*(Z|[+\-]\d{2}:?\d{2})$/.test(s);
+    if (hasExplicitZone) {
+      var instant = new Date(s);
+      if (!isNaN(instant.getTime())) {
+        return instant;
+      }
     }
 
     var iso = s.match(/^(\d{4})[\/\-.](\d{1,2})[\/\-.](\d{1,2})/);
@@ -235,6 +298,37 @@
 
 
   /* =======================================================
+     CAMPAIGN DATA HELPERS
+
+     Handles every "nothing saved yet" shape in one place: the Age
+     attribute was never set, this tag didn't resolve at all, or the
+     JSON is malformed - all of these just fall back to {}. Narrowing
+     that map down to this campaign's own entry happens separately in
+     STATE below (campaignMap[campaignId] || {}), which is likewise
+     safe when campaignId has no entry yet - every ATTR.* read further
+     down already treats an empty {} as "no cycle yet".
+  ======================================================= */
+
+  function parseCampaignMap(raw) {
+
+    if (isMissingValue(raw)) {
+      return {};
+    }
+
+    if (typeof raw === "object") {
+      return raw;
+    }
+
+    try {
+      var parsed = JSON.parse(raw);
+      return (parsed && typeof parsed === "object") ? parsed : {};
+    } catch (error) {
+      return {};
+    }
+  }
+
+
+  /* =======================================================
      STATE
 
      No reset-to-a-new-cycle logic here on purpose:
@@ -247,10 +341,14 @@
 
   var today = new Date();
 
-  var cycleStartDate = parseFlexibleDate(customData[ATTR.CYCLE_START_DATE]) || parseFlexibleDate(CONFIG.defaultCycleStartDate);
+  var campaignId = customData[CAMPAIGN_ID_KEY];
+  var campaignMap = parseCampaignMap(customData[CAMPAIGN_DATA_KEY]);
+  var campaignData = campaignMap[campaignId] || {};
 
-  var visitedDays = parseVisitedDays(customData[ATTR.VISITED_DAYS]);
-  var totalPoints = Number(customData[ATTR.TOTAL_POINTS]) || 0;
+  var cycleStartDate = parseFlexibleDate(campaignData[ATTR.CYCLE_START_DATE]) || parseFlexibleDate(CONFIG.defaultCycleStartDate);
+
+  var visitedDays = parseVisitedDays(campaignData[ATTR.VISITED_DAYS]);
+  var totalPoints = Number(campaignData[ATTR.TOTAL_POINTS]) || 0;
 
   var currentDay = Math.max(1, diffInDays(today, cycleStartDate) + 1);
   var cycleFinished = currentDay > CONFIG.totalDays;
@@ -374,18 +472,22 @@
 
   /*
    * Flat, so the journey's liquid can read it as
-   * event["custom"]["event_time"] and ["cycle_start_date"]
-   * - see backend-logic.txt.
+   * event["custom"]["event_time"], ["cycle_start_date"] and
+   * ["campaign_id"] - see backend-logic.txt.
    *
    * cycle_start_date always carries an actual date - on a user's very
    * first check-in that's our own CONFIG.defaultCycleStartDate, not an
    * empty string, so WE decide the cycle's start date rather than
    * leaving it to the server's own empty-value fallback.
+   *
+   * campaign_id tells the backend which entry inside the shared Map
+   * attribute to update, without touching any other campaign's data.
    */
   function buildClaimEventPayload() {
     var payload = {};
     payload[EVENT_PAYLOAD_KEY.EVENT_TIME] = WE_DATE_PREFIX + new Date().toISOString();
     payload[EVENT_PAYLOAD_KEY.CYCLE_START_DATE] = WE_DATE_PREFIX + cycleStartDate.toISOString();
+    payload[EVENT_PAYLOAD_KEY.CAMPAIGN_ID] = campaignId;
     return payload;
   }
 

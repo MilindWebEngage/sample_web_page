@@ -29,15 +29,20 @@
    individual fields, or the tag not resolving at all all collapse to
    the same "no cycle yet" handling via parseCampaignMap().
 
-   On check-in click we track CONFIG.eventName ("daily_checkin_claim")
-   with a flat payload the journey's liquid can read as:
+   On check-in click we track CONFIG.eventName ("7-DAY STREAK") with a
+   flat payload the journey's liquid can read as:
 
      event["custom"]["event_time"]
      event["custom"]["cycle_start_date"]
      event["custom"]["campaign_id"]
+     event["custom"]["server_time"]
+     event["custom"]["dailyPoints"]
+     event["custom"]["streak"]
+     event["custom"]["TotalPoints"]
 
    i.e. the event's custom data must be:
-     { event_time: "...", cycle_start_date: "...", campaign_id: "..." }
+     { event_time: "...", cycle_start_date: "...", campaign_id: "...",
+       server_time: "...", dailyPoints: 50, streak: 1, TotalPoints: 50 }
 
    The server (backend-logic.txt) recomputes TotalPoints /
    StreakCount / VisitedDays authoritatively from these values plus
@@ -57,10 +62,7 @@
       { day: 4, bonus: 200 },
       { day: 7, bonus: 250 }
     ],
-    eventName: "daily_checkin_claim",
-
-    /* Fired instead of/alongside eventName when a check-in completes the full 7-day streak. */
-    streakEventName: "7-DAY STREAK",
+    eventName: "7-DAY STREAK",
 
     /*
      * Fixed, shared day-1 for every user - used when the profile
@@ -74,7 +76,7 @@
      * so the server just persists what we decided here instead of
      * applying its own empty-value fallback. Format: "YYYY-MM-DD".
      */
-    defaultCycleStartDate: "2026-09-24"
+    defaultCycleStartDate: "2026-09-10"
   };
 
   /* Field keys within this campaign's own entry - the schema backend-logic.txt reads/writes. */
@@ -106,25 +108,19 @@
   /*
    * Event custom-data keys, flat on the event - so the journey's
    * liquid can read them as event["custom"]["event_time"] / ["cycle_start_date"]
-   * / ["campaign_id"].
+   * / ["campaign_id"] / etc.
    */
   var EVENT_PAYLOAD_KEY = {
     EVENT_TIME: "event_time",
     CYCLE_START_DATE: "cycle_start_date",
     CAMPAIGN_ID: "campaign_id",
-    SERVER_TIME: "server_time"
-  };
-
-  /* CONFIG.streakEventName custom-data keys - event["custom"][...] on that event. */
-  var STREAK_EVENT_PAYLOAD_KEY = {
+    SERVER_TIME: "server_time",
     DAILY_POINTS: "dailyPoints",
     STREAK: "streak",
-    TOTAL_POINTS: "TotalPoints",
-    EVENT_TIME: "event_time",
-    SERVER_TIME: "server_time"
+    TOTAL_POINTS: "TotalPoints"
   };
 
-  /* Third-party UTC time source for EVENT_PAYLOAD_KEY.SERVER_TIME / STREAK_EVENT_PAYLOAD_KEY.SERVER_TIME. */
+  /* Third-party UTC time source for EVENT_PAYLOAD_KEY.SERVER_TIME. */
   var SERVER_TIME_URL = "https://utctime.app/api/now";
 
   /*
@@ -515,33 +511,21 @@
    * serverTime is the utc_iso fetched from SERVER_TIME_URL - optional
    * since that fetch can fail, in which case the event is just sent
    * without it rather than blocked on it.
+   *
+   * streak and totalPoints are read as-of AFTER this check-in's own
+   * point/bonus updates (see checkIn), so they reflect the streak
+   * just claimed rather than the prior one.
    */
-  function buildClaimEventPayload(serverTime) {
+  function buildClaimEventPayload(streak, totalPoints, serverTime) {
     var payload = {};
     payload[EVENT_PAYLOAD_KEY.EVENT_TIME] = WE_DATE_PREFIX + new Date().toISOString();
     payload[EVENT_PAYLOAD_KEY.CYCLE_START_DATE] = WE_DATE_PREFIX + cycleStartDate.toISOString();
     payload[EVENT_PAYLOAD_KEY.CAMPAIGN_ID] = campaignId;
+    payload[EVENT_PAYLOAD_KEY.DAILY_POINTS] = CONFIG.dailyPoints;
+    payload[EVENT_PAYLOAD_KEY.STREAK] = streak;
+    payload[EVENT_PAYLOAD_KEY.TOTAL_POINTS] = totalPoints;
     if (serverTime) {
       payload[EVENT_PAYLOAD_KEY.SERVER_TIME] = WE_DATE_PREFIX + serverTime;
-    }
-    return payload;
-  }
-
-  /*
-   * Fired alongside CONFIG.eventName when the check-in that just
-   * happened completed the full streak (see checkIn). streak and
-   * totalPoints are read as-of AFTER that check-in's own point/bonus
-   * updates, so they reflect the streak just completed rather than
-   * the prior one.
-   */
-  function buildStreakEventPayload(streak, totalPoints, serverTime) {
-    var payload = {};
-    payload[STREAK_EVENT_PAYLOAD_KEY.DAILY_POINTS] = CONFIG.dailyPoints;
-    payload[STREAK_EVENT_PAYLOAD_KEY.STREAK] = streak;
-    payload[STREAK_EVENT_PAYLOAD_KEY.TOTAL_POINTS] = totalPoints;
-    payload[STREAK_EVENT_PAYLOAD_KEY.EVENT_TIME] = WE_DATE_PREFIX + new Date().toISOString();
-    if (serverTime) {
-      payload[STREAK_EVENT_PAYLOAD_KEY.SERVER_TIME] = WE_DATE_PREFIX + serverTime;
     }
     return payload;
   }
@@ -601,10 +585,7 @@
     });
 
     fetchServerTime().then(function (serverTime) {
-      trackEvent(CONFIG.eventName, buildClaimEventPayload(serverTime));
-      if (streak === CONFIG.totalDays) {
-        trackEvent(CONFIG.streakEventName, buildStreakEventPayload(streak, totalPoints, serverTime));
-      }
+      trackEvent(CONFIG.eventName, buildClaimEventPayload(streak, totalPoints, serverTime));
     });
 
     pendingMilestone = hitMilestone;

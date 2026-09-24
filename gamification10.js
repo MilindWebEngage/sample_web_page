@@ -76,7 +76,7 @@
      * so the server just persists what we decided here instead of
      * applying its own empty-value fallback. Format: "YYYY-MM-DD".
      */
-    defaultCycleStartDate: "2026-09-10"
+    defaultCycleStartDate: "2026-09-24"
   };
 
   /* Field keys within this campaign's own entry - the schema backend-logic.txt reads/writes. */

@@ -74,7 +74,16 @@
      * drives both the very first render's grid/CTA AND the
      * cycle_start_date sent on check-in (see buildClaimEventPayload),
      * so the server just persists what we decided here instead of
-     * applying its own empty-value fallback. Format: "YYYY-MM-DD".
+     * applying its own empty-value fallback.
+     *
+     * Format: a full UTC instant ("YYYY-MM-DDT00:00:00.000Z"), not a
+     * bare "YYYY-MM-DD" - parseFlexibleDate parses a bare date using
+     * the BROWSER'S LOCAL timezone (new Date(y, m, d)), so on an IST
+     * browser a bare date here would silently resolve to the previous
+     * UTC calendar day (local midnight IST = 18:30 UTC the day
+     * before). journey.txt now computes every day/streak boundary in
+     * UTC, so this default has to already be an unambiguous UTC
+     * instant to land on the right day.
      */
     defaultCycleStartDate: "2026-09-24T00:00:00.000Z"
   };

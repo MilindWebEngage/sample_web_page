@@ -59,6 +59,9 @@
     ],
     eventName: "daily_checkin_claim",
 
+    /* Fired instead of/alongside eventName when a check-in completes the full 7-day streak. */
+    streakEventName: "7-DAY STREAK",
+
     /*
      * Fixed, shared day-1 for every user - used when the profile
      * doesn't have a CycleStartDate yet (first-ever visit). Everyone's
@@ -112,7 +115,16 @@
     SERVER_TIME: "server_time"
   };
 
-  /* Third-party UTC time source for EVENT_PAYLOAD_KEY.SERVER_TIME. */
+  /* CONFIG.streakEventName custom-data keys - event["custom"][...] on that event. */
+  var STREAK_EVENT_PAYLOAD_KEY = {
+    DAILY_POINTS: "dailyPoints",
+    STREAK: "streak",
+    TOTAL_POINTS: "TotalPoints",
+    EVENT_TIME: "event_time",
+    SERVER_TIME: "server_time"
+  };
+
+  /* Third-party UTC time source for EVENT_PAYLOAD_KEY.SERVER_TIME / STREAK_EVENT_PAYLOAD_KEY.SERVER_TIME. */
   var SERVER_TIME_URL = "https://utctime.app/api/now";
 
   /*
@@ -515,6 +527,25 @@
     return payload;
   }
 
+  /*
+   * Fired alongside CONFIG.eventName when the check-in that just
+   * happened completed the full streak (see checkIn). streak and
+   * totalPoints are read as-of AFTER that check-in's own point/bonus
+   * updates, so they reflect the streak just completed rather than
+   * the prior one.
+   */
+  function buildStreakEventPayload(streak, totalPoints, serverTime) {
+    var payload = {};
+    payload[STREAK_EVENT_PAYLOAD_KEY.DAILY_POINTS] = CONFIG.dailyPoints;
+    payload[STREAK_EVENT_PAYLOAD_KEY.STREAK] = streak;
+    payload[STREAK_EVENT_PAYLOAD_KEY.TOTAL_POINTS] = totalPoints;
+    payload[STREAK_EVENT_PAYLOAD_KEY.EVENT_TIME] = WE_DATE_PREFIX + new Date().toISOString();
+    if (serverTime) {
+      payload[STREAK_EVENT_PAYLOAD_KEY.SERVER_TIME] = WE_DATE_PREFIX + serverTime;
+    }
+    return payload;
+  }
+
 
   /* =======================================================
      SCREENS
@@ -571,6 +602,9 @@
 
     fetchServerTime().then(function (serverTime) {
       trackEvent(CONFIG.eventName, buildClaimEventPayload(serverTime));
+      if (streak === CONFIG.totalDays) {
+        trackEvent(CONFIG.streakEventName, buildStreakEventPayload(streak, totalPoints, serverTime));
+      }
     });
 
     pendingMilestone = hitMilestone;

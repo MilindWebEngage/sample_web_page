@@ -108,8 +108,12 @@
   var EVENT_PAYLOAD_KEY = {
     EVENT_TIME: "event_time",
     CYCLE_START_DATE: "cycle_start_date",
-    CAMPAIGN_ID: "campaign_id"
+    CAMPAIGN_ID: "campaign_id",
+    SERVER_TIME: "server_time"
   };
+
+  /* Third-party UTC time source for EVENT_PAYLOAD_KEY.SERVER_TIME. */
+  var SERVER_TIME_URL = "https://utctime.app/api/now";
 
   /*
    * WebEngage's own marker for a Date-typed custom value - required so
@@ -471,6 +475,19 @@
   }
 
   /*
+   * utc_iso from SERVER_TIME_URL, for EVENT_PAYLOAD_KEY.SERVER_TIME.
+   * Resolves to null (rather than rejecting) on any network/parse
+   * failure, so callers can just omit the field instead of handling
+   * an error case.
+   */
+  function fetchServerTime() {
+    return fetch(SERVER_TIME_URL)
+      .then(function (response) { return response.json(); })
+      .then(function (data) { return (data && data.utc_iso) || null; })
+      .catch(function () { return null; });
+  }
+
+  /*
    * Flat, so the journey's liquid can read it as
    * event["custom"]["event_time"], ["cycle_start_date"] and
    * ["campaign_id"] - see backend-logic.txt.
@@ -482,12 +499,19 @@
    *
    * campaign_id tells the backend which entry inside the shared Map
    * attribute to update, without touching any other campaign's data.
+   *
+   * serverTime is the utc_iso fetched from SERVER_TIME_URL - optional
+   * since that fetch can fail, in which case the event is just sent
+   * without it rather than blocked on it.
    */
-  function buildClaimEventPayload() {
+  function buildClaimEventPayload(serverTime) {
     var payload = {};
     payload[EVENT_PAYLOAD_KEY.EVENT_TIME] = WE_DATE_PREFIX + new Date().toISOString();
     payload[EVENT_PAYLOAD_KEY.CYCLE_START_DATE] = WE_DATE_PREFIX + cycleStartDate.toISOString();
     payload[EVENT_PAYLOAD_KEY.CAMPAIGN_ID] = campaignId;
+    if (serverTime) {
+      payload[EVENT_PAYLOAD_KEY.SERVER_TIME] = WE_DATE_PREFIX + serverTime;
+    }
     return payload;
   }
 
@@ -545,7 +569,9 @@
       }
     });
 
-    trackEvent(CONFIG.eventName, buildClaimEventPayload());
+    fetchServerTime().then(function (serverTime) {
+      trackEvent(CONFIG.eventName, buildClaimEventPayload(serverTime));
+    });
 
     pendingMilestone = hitMilestone;
 

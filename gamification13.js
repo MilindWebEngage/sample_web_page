@@ -344,6 +344,7 @@
       var parsed = JSON.parse(raw);
       return (parsed && typeof parsed === "object") ? parsed : {};
     } catch (error) {
+      console.warn("WebEngage CampaignData did not parse as JSON - falling back to {}. Raw value:", raw);
       return {};
     }
   }
@@ -364,6 +365,9 @@
 
   var campaignId = customData[CAMPAIGN_ID_KEY];
   var campaignMap = parseCampaignMap(customData[CAMPAIGN_DATA_KEY]);
+  if (Object.keys(campaignMap).length > 0 && !campaignMap[campaignId]) {
+    console.warn("WebEngage CampaignData parsed but has no entry for CampaignId '" + campaignId + "' - treating as no cycle yet. Parsed keys:", Object.keys(campaignMap));
+  }
   var campaignData = campaignMap[campaignId] || {};
 
   var cycleStartDate = parseFlexibleDate(campaignData[ATTR.CYCLE_START_DATE]) || parseFlexibleDate(CONFIG.defaultCycleStartDate);

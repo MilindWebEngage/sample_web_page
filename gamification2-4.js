@@ -46,7 +46,6 @@
     NORMAL_BTN_GROUP: "normalBtnGroup",
     BUY_NOW_BTN: "buyNowBtn",
     BUY_NOW_HIDDEN_LINK: "buyNowHiddenLink",
-    PRODUCT_LINKS: "productLinks",
     SEE_RULES_BTN: "seeRulesBtn",
     BACK_BTN: "backBtn",
     VIEW_STAMPS: "viewStamps",
@@ -161,7 +160,6 @@
   var setComplete = collectedCount === CONFIG.products.length;
 
   var gridEl = document.getElementById(ELEMENT_ID.GRID);
-  var productLinksEl = document.getElementById(ELEMENT_ID.PRODUCT_LINKS);
   var fractionEl = document.getElementById(ELEMENT_ID.FRACTION);
   var trackFillEl = document.getElementById(ELEMENT_ID.TRACK_FILL);
   var goalAmountEl = document.getElementById(ELEMENT_ID.GOAL_AMOUNT);
@@ -170,38 +168,31 @@
   var viewStampsEl = document.getElementById(ELEMENT_ID.VIEW_STAMPS);
   var viewRulesEl = document.getElementById(ELEMENT_ID.VIEW_RULES);
 
-  /*
-   * Clicking a visible tile triggers the matching HIDDEN real anchor's own
-   * .click() - synchronously, inside this handler, so it's still part of
-   * the same user gesture the browser/webview saw. Custom schemes like
-   * dtt:// need a genuine <a href="..."> present at load time to reliably
-   * fire native deep-link handling; this keeps that real anchor (in
-   * index.html's #productLinks, never created or re-hrefed here) while
-   * letting the VISIBLE tile be plain, disposable, JS-rendered markup.
-   */
-  function onTileClick(pid) {
-    var link = productLinksEl && productLinksEl.querySelector('[data-pid="' + pid + '"]');
-    if (link) {
-      link.click();
-    } else {
-      console.warn("No hidden link found in #productLinks for pid '" + pid + "' - add an <a data-pid=\"" + pid + "\" href=\"...\"> there.");
-    }
-  }
-
   function render() {
 
-    gridEl.innerHTML = "";
-
+    /*
+     * Tiles are REAL static <a href="dtt://..."> elements already in
+     * index.html, each with its own correct per-product href from page
+     * load - WebEngage registers one navigable action per anchor it finds
+     * when it parses the message HTML, keyed to whatever href was there
+     * at that time. A href assigned or changed afterward via JS (or a
+     * click simulated on a different, hidden anchor) is not reliably
+     * picked up by that registration. So this never creates the anchor,
+     * never touches .href, and never simulates a click - it only ever
+     * fills in each existing tile's inner content and state class.
+     */
     CONFIG.products.forEach(function (product) {
       var state = tileState(product.pid);
-      var el = document.createElement("div");
+      var el = gridEl.querySelector('[data-pid="' + product.pid + '"]');
+      if (!el) {
+        console.warn("No static tile found in index.html for pid '" + product.pid + "' - add an <a class=\"stamp\" data-pid=\"" + product.pid + "\" href=\"...\"> to the grid.");
+        return;
+      }
       el.className = "stamp " + state;
       el.innerHTML =
         '<img class="stamp-img" src="' + product.image + '" alt="">' +
         '<div class="stamp-label">' + product.name + "</div>" +
         (state === TILE_STATE.CONFIRMED ? '<div class="stamp-tick">✓</div>' : "");
-      el.addEventListener("click", function () { onTileClick(product.pid); });
-      gridEl.appendChild(el);
     });
 
     fractionEl.textContent = collectedCount + "/" + CONFIG.products.length;

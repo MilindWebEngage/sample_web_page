@@ -215,11 +215,24 @@
         console.warn("No static tile found in index.html for pid '" + product.pid + "' - add an <a class=\"stamp\" data-pid=\"" + product.pid + "\" href=\"...\"> to the grid.");
         return;
       }
+      /* Pick the final image up front - a confirmed stamp renders its
+         collectedImage directly instead of fetching the locked image
+         first and swapping it afterward (that used to cost an extra,
+         wasted network request per already-confirmed stamp). */
+      var showCollected = state === TILE_STATE.CONFIRMED && product.collectedImage;
+      var imgSrc = showCollected ? product.collectedImage : product.image;
       el.className = "stamp " + state;
       el.innerHTML =
-        '<img class="stamp-img" src="' + product.image + '" alt="">' +
+        '<img class="stamp-img" src="' + imgSrc + '" alt="' + (product.name || "") + '">' +
         '<div class="stamp-label">' + product.name + "</div>" +
         (state === TILE_STATE.CONFIRMED ? '<div class="stamp-tick">✓</div>' : "");
+
+      var imgEl = el.querySelector(".stamp-img");
+      if (showCollected && product.collectedScale) {
+        sizeImg(imgEl, product.collectedScale);
+      } else if (!showCollected && product.lockedScale) {
+        sizeImg(imgEl, product.lockedScale); // evens out artwork exported with extra padding
+      }
     });
 
     fractionEl.textContent = collectedCount + "/" + CONFIG.products.length;
@@ -314,29 +327,14 @@
     img.style.left = img.style.top = (-(pct - 100) / 2) + "%";
   }
 
-  // 1) Collected stamps show their collected artwork (page 1 and page 3)
-  CONFIG.products.forEach(function (p) {
-    var tile = gridEl && gridEl.querySelector('[data-pid="' + p.pid + '"]');
-    if (!tile) return;
-    var img = tile.querySelector(".stamp-img");
-    if (!img) return;
-    img.alt = p.name || "";
-    if (tileState(p.pid) === TILE_STATE.CONFIRMED && p.collectedImage) {
-      img.src = p.collectedImage;
-      if (p.collectedScale) sizeImg(img, p.collectedScale);
-    } else if (p.lockedScale) {
-      sizeImg(img, p.lockedScale); // evens out artwork exported with extra padding
-    }
-  });
-
-  // 2) Full set -> page 3 (SĂN TRỌN BỘ becomes ĐÓNG) + confetti
+  // 1) Full set -> page 3 (SĂN TRỌN BỘ becomes ĐÓNG) + confetti
   if (setComplete) {
     mainModalEl.classList.add("is-complete");
     getRewardBtnEl.style.display = "block";
     launchConfetti();
   }
 
-  // 3) XEM THỂ LỆ on page 3 opens the rules page
+  // 2) XEM THỂ LỆ on page 3 opens the rules page
   var finalRulesBtn = document.getElementById("finalRulesBtn");
   if (finalRulesBtn) {
     finalRulesBtn.addEventListener("click", showRules);

@@ -221,10 +221,13 @@
          wasted network request per already-confirmed stamp). */
       var showCollected = state === TILE_STATE.CONFIRMED && product.collectedImage;
       var imgSrc = showCollected ? product.collectedImage : product.image;
+      /* name is optional - pid itself is the human-readable product name
+         in this campaign's data, so there's no need to send it twice. */
+      var label = product.name || product.pid;
       el.className = "stamp " + state;
       el.innerHTML =
-        '<img class="stamp-img" src="' + imgSrc + '" alt="' + (product.name || "") + '">' +
-        '<div class="stamp-label">' + product.name + "</div>" +
+        '<img class="stamp-img" src="' + imgSrc + '" alt="' + label + '">' +
+        '<div class="stamp-label">' + label + "</div>" +
         (state === TILE_STATE.CONFIRMED ? '<div class="stamp-tick">✓</div>' : "");
 
       var imgEl = el.querySelector(".stamp-img");

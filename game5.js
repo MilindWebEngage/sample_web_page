@@ -215,11 +215,15 @@
         console.warn("No static tile found in index.html for pid '" + product.pid + "' - add an <a class=\"stamp\" data-pid=\"" + product.pid + "\" href=\"...\"> to the grid.");
         return;
       }
-      /* Pick the final image up front - a confirmed stamp renders its
-         collectedImage directly instead of fetching the locked image
-         first and swapping it afterward (that used to cost an extra,
-         wasted network request per already-confirmed stamp). */
-      var showCollected = state === TILE_STATE.CONFIRMED && product.collectedImage;
+      /* Pick the final image up front - a confirmed OR highlighted stamp
+         (in point_issues_id or still just in product_purchase) both render
+         collectedImage directly, so a pending purchase already shows the
+         nicer "collected" artwork instead of the grey locked one; only a
+         stamp with no purchase/confirmation at all still shows the locked
+         image. This also avoids fetching the locked image first and
+         swapping it afterward (that used to cost an extra, wasted network
+         request per already-confirmed stamp). */
+      var showCollected = (state === TILE_STATE.CONFIRMED || state === TILE_STATE.HIGHLIGHTED) && product.collectedImage;
       var imgSrc = showCollected ? product.collectedImage : product.image;
       /* name is optional - pid itself is the human-readable product name
          in this campaign's data, so there's no need to send it twice. */
@@ -228,7 +232,7 @@
       el.innerHTML =
         '<img class="stamp-img" src="' + imgSrc + '" alt="' + label + '">' +
         '<div class="stamp-label">' + label + "</div>" +
-        (state === TILE_STATE.CONFIRMED ? '<div class="stamp-tick">✓</div>' : "");
+        (showCollected ? '<div class="stamp-tick">✓</div>' : "");
 
       var imgEl = el.querySelector(".stamp-img");
       if (showCollected && product.collectedScale) {

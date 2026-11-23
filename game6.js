@@ -231,8 +231,7 @@
       el.className = "stamp " + state;
       el.innerHTML =
         '<img class="stamp-img" src="' + imgSrc + '" alt="' + label + '">' +
-        '<div class="stamp-label">' + label + "</div>" +
-        (showCollected ? '<div class="stamp-tick">✓</div>' : "");
+        '<div class="stamp-label">' + label + "</div>";
 
       var imgEl = el.querySelector(".stamp-img");
       if (showCollected && product.collectedScale) {

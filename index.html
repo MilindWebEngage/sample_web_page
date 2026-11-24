@@ -1,124 +1,332 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="color-scheme" content="dark">
-  <title>SDK Circuit Flow</title>
-  <link rel="stylesheet" href="css/styles.css">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Bridge Event Tester</title>
+<style>
+  :root {
+    --bg: #f6f7f9; --card: #ffffff; --text: #16181d; --muted: #5d6470; --border: #dde1e7;
+    --accent: #2563eb; --accent-text: #ffffff; --ok: #15803d; --warn: #b45309; --err: #b91c1c;
+    --code-bg: #f1f3f6;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f1115; --card: #181b21; --text: #e8eaee; --muted: #9aa2ae; --border: #2a2f38;
+      --accent: #3b82f6; --accent-text: #ffffff; --ok: #4ade80; --warn: #fbbf24; --err: #f87171;
+      --code-bg: #20242c;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 15px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    padding: 16px; padding-bottom: calc(16px + env(safe-area-inset-bottom));
+  }
+  main { max-width: 760px; margin: 0 auto; display: grid; gap: 14px; }
+  h1 { font-size: 20px; margin: 4px 0 0; }
+  h2 { font-size: 15px; margin: 0 0 10px; }
+  p { margin: 0; }
+  .muted { color: var(--muted); font-size: 13px; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 14px; }
+  .status { display: flex; align-items: center; gap: 8px; font-weight: 600; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--err); flex: none; }
+  .dot.ok { background: var(--ok); }
+  label { display: block; font-size: 13px; color: var(--muted); margin: 10px 0 4px; }
+  input, textarea, select {
+    width: 100%; font: inherit; color: var(--text); background: var(--bg);
+    border: 1px solid var(--border); border-radius: 8px; padding: 9px 10px;
+  }
+  textarea { min-height: 110px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; }
+  button {
+    font: inherit; font-weight: 600; border: 0; border-radius: 8px; padding: 10px 14px;
+    background: var(--accent); color: var(--accent-text); cursor: pointer;
+  }
+  button.secondary { background: var(--code-bg); color: var(--text); border: 1px solid var(--border); }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+  .row > * { flex: 1 1 140px; }
+  .cases { display: grid; gap: 8px; }
+  .case {
+    display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; align-items: center;
+    border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px;
+  }
+  .case b { font-size: 14px; }
+  .case .expect { grid-column: 1 / -1; font-size: 13px; color: var(--muted); }
+  .case button { padding: 8px 12px; }
+  .tag { font-size: 11px; font-weight: 700; padding: 1px 6px; border-radius: 6px; margin-left: 6px;
+         border: 1px solid currentColor; color: var(--warn); vertical-align: 1px; }
+  #log {
+    margin: 0; background: var(--code-bg); border-radius: 8px; padding: 10px; max-height: 320px; overflow: auto;
+    font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; white-space: pre-wrap; word-break: break-all;
+  }
+  .l-ok { color: var(--ok); } .l-err { color: var(--err); } .l-info { color: var(--muted); }
+</style>
 </head>
 <body>
-  <header class="top">
-    <div class="brand">
-      <span class="brand-dot"></span>
-      <div>
-        <h1>WebEngage Android SDK · Circuit Flow</h1>
-        <p>Public API → IntentFactory → SubscriberManager → TopicInterceptorImpl → Controllers → Actions → storage / network</p>
-      </div>
+<main>
+  <div>
+    <h1>Bridge Event Tester</h1>
+    <p class="muted">Sends events through <code>window.__WEBENGAGE_MOBILE_BRIDGE__</code> from a web view in an app using the WebEngage iOS or Android SDK.</p>
+  </div>
+
+  <section class="card">
+    <div class="status"><span class="dot" id="dot"></span><span id="status">Checking bridge…</span></div>
+    <p class="muted" id="statusDetail" style="margin-top:6px"></p>
+  </section>
+
+  <section class="card">
+    <h2>WP-48275 test cases</h2>
+    <p class="muted" style="margin-bottom:10px">Limits on both SDKs: event name 50, attribute key 50, attribute value 1000 characters. Check the results in the SDK debug logs or the dashboard.</p>
+    <div class="cases" id="cases"></div>
+  </section>
+
+  <section class="card">
+    <h2>Custom event</h2>
+    <label for="evName">Event name</label>
+    <input id="evName" value="bridge_test_event" autocapitalize="off" autocorrect="off" spellcheck="false">
+    <label for="evAttrs">Attributes (JSON; leave empty for none)</label>
+    <textarea id="evAttrs" autocapitalize="off" autocorrect="off" spellcheck="false">{
+  "product": "Shoes",
+  "price": 1999.5,
+  "in_stock": true,
+  "tags": ["sale", "summer"]
+}</textarea>
+    <label for="evMode">Send attributes as</label>
+    <select id="evMode">
+      <option value="json">JSON string (what the web SDK sends)</option>
+      <option value="raw">Text exactly as typed (can be invalid JSON)</option>
+      <option value="object">JavaScript object (iOS only, direct postMessage)</option>
+    </select>
+    <div class="row">
+      <button id="sendEvent">Send event</button>
+      <button class="secondary" id="sendNoAttrs">Send without attributes</button>
     </div>
-    <nav class="tabs" role="tablist">
-      <button class="tab active" data-tab="circuit" role="tab">⚡ Circuit</button>
-      <button class="tab" data-tab="topics" role="tab">🔀 Topic map</button>
-      <button class="tab" data-tab="storage" role="tab">🗄️ Storage</button>
-      <button class="tab" data-tab="signals" role="tab">📡 System events</button>
-      <button class="tab" data-tab="timers" role="tab">⏱️ Constants</button>
-      <button class="tab" data-tab="words" role="tab">📖 Glossary</button>
-    </nav>
-  </header>
-
-  <!-- ============ CIRCUIT ============ -->
-  <main id="tab-circuit" class="view active">
-    <aside class="stories">
-      <h2>Flows</h2>
-      <div id="storyList" class="story-list"></div>
-      <div class="legend">
-        <h3>Legend</h3>
-        <p><i class="lg lg-live"></i> Current: active call path in this step</p>
-        <p><i class="lg lg-used"></i> Path already taken in this flow</p>
-        <p><i class="lg lg-part"></i> SDK component / Controller</p>
-        <p><i class="lg lg-store"></i> On-device storage</p>
-        <p class="hint">Click any chip to see its role and source files. Column 4 is Topic subscribers in Topic.java order.</p>
-      </div>
-    </aside>
-
-    <section class="board-wrap">
-      <div class="board-head">
-        <div>
-          <div id="storyTitle" class="story-title"></div>
-          <div id="storyIntro" class="story-intro"></div>
-        </div>
-      </div>
-      <div class="board-scroll">
-        <svg id="board" viewBox="0 0 1300 850" preserveAspectRatio="xMidYMid meet" aria-label="SDK circuit board"></svg>
-      </div>
-      <div class="controls">
-        <button id="btnRestart" class="ctl" title="Restart">⏮</button>
-        <button id="btnPrev" class="ctl" title="Previous step (←)">◀</button>
-        <button id="btnPlay" class="ctl play" title="Play / pause (space)">▶ Play</button>
-        <button id="btnNext" class="ctl" title="Next step (→)">▶</button>
-        <div id="dots" class="dots"></div>
-        <label class="speed">Speed
-          <select id="speed">
-            <option value="0.6">Slow</option>
-            <option value="1" selected>Normal</option>
-            <option value="1.6">Fast</option>
-          </select>
-        </label>
-      </div>
-    </section>
-
-    <aside class="explain">
-      <div id="stepCard" class="card step-card"></div>
-      <div class="phone-wrap">
-        <div class="phone"><div id="phoneScreen" class="phone-screen"></div></div>
-        <div class="phone-cap">Device state</div>
-      </div>
-    </aside>
-  </main>
-
-  <!-- ============ TOPICS ============ -->
-  <section id="tab-topics" class="view page">
-    <h2>Topic → subscribers (Topic.java)</h2>
-    <p class="lead">SubscriberManager.callSubscribers(topic, data): every TopicInterceptor.preCall() must return true, then each
-      subscriber's createAction() runs in the order below, then postCall(). Topics are posted as Intents to ExecutorService
-      (SYNC_TO_SERVER → EventLogService) and handled serially on one HandlerThread.</p>
-    <div id="topicGrid"></div>
   </section>
 
-  <!-- ============ STORAGE ============ -->
-  <section id="tab-storage" class="view page">
-    <h2>On-device storage</h2>
-    <p class="lead">3 SQLite databases, 3 SharedPreferences files and the in-memory DataHolder.
-      WebEngage.deleteAllData() (run on a license-code change) wipes everything except PERSISTENT_PREFS.</p>
-    <div id="storeGrid" class="store-grid"></div>
+  <section class="card">
+    <h2>User and screen</h2>
+    <label for="cuid">User ID</label>
+    <input id="cuid" value="bridge_test_user" autocapitalize="off" autocorrect="off" spellcheck="false">
+    <div class="row">
+      <button id="login">Login</button>
+      <button class="secondary" id="logout">Logout</button>
+    </div>
+    <label for="userAttrs">User attributes (JSON)</label>
+    <textarea id="userAttrs" autocapitalize="off" autocorrect="off" spellcheck="false">{
+  "we_first_name": "Bridge",
+  "we_email": "bridge.test@example.com",
+  "plan": "gold"
+}</textarea>
+    <div class="row"><button class="secondary" id="setAttr">Set user attributes</button></div>
+    <label for="screenName">Screen name</label>
+    <input id="screenName" value="Bridge Test Screen" autocapitalize="off" autocorrect="off" spellcheck="false">
+    <div class="row"><button class="secondary" id="screen">Track screen</button></div>
   </section>
 
-  <!-- ============ SIGNALS ============ -->
-  <section id="tab-signals" class="view page">
-    <h2>System events (EventName.java)</h2>
-    <p class="lead">Category <code>system</code>. Custom events from track() are category <code>application</code>.
-      <span class="pill now">HIGH · flush</span> → BufferFlushStrategy (uploaded immediately);
-      <span class="pill soon">buffered</span> → BufferNetworkStrategy;
-      <span class="pill no">not uploaded</span> → INTERNAL_EVENT (no ReportingController).</p>
-    <div id="signalGrid" class="signal-grid"></div>
+  <section class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <h2 style="margin:0">Log</h2>
+      <button class="secondary" id="clearLog" style="padding:6px 10px">Clear</button>
+    </div>
+    <pre id="log"></pre>
   </section>
+</main>
 
-  <!-- ============ TIMERS ============ -->
-  <section id="tab-timers" class="view page">
-    <h2>Constants &amp; limits</h2>
-    <p class="lead">From utils/WebEngageConstant.java and the storage managers.</p>
-    <div id="timerGrid" class="timer-grid"></div>
-  </section>
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var logEl = $('log');
 
-  <!-- ============ WORDS ============ -->
-  <section id="tab-words" class="view page">
-    <h2>Glossary</h2>
-    <p class="lead">Identifiers and internal terms used across the SDK.</p>
-    <div id="wordGrid" class="word-grid"></div>
-  </section>
+  function log(msg, kind) {
+    var line = document.createElement('div');
+    line.className = 'l-' + (kind || 'info');
+    line.textContent = '[' + new Date().toLocaleTimeString() + '] ' + msg;
+    logEl.prepend(line);
+  }
 
-  <script src="js/data.js"></script>
-  <script src="js/phone.js"></script>
-  <script src="js/app.js"></script>
+  function bridge() { return window.__WEBENGAGE_MOBILE_BRIDGE__; }
+  function iosHandler() {
+    return window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.wegBridge;
+  }
+  function platform() {
+    if (iosHandler()) return 'iOS';
+    if (bridge()) return 'Android';
+    return null;
+  }
+
+  function updateStatus() {
+    var p = platform();
+    $('dot').className = 'dot' + (p ? ' ok' : '');
+    $('status').textContent = p ? 'Bridge found (' + p + ')' : 'Bridge not found';
+    $('statusDetail').textContent = p
+      ? 'Events are sent to the native WebEngage SDK.'
+      : 'Open this page in the app\'s web view with the WebEngage mobile bridge enabled. In a normal browser, buttons only log what they would send.';
+  }
+
+  function preview(v) {
+    if (v === undefined) return 'none';
+    if (v === null) return 'null';
+    var s = typeof v === 'string' ? v : JSON.stringify(v);
+    return (typeof v) + ' (' + s.length + ' chars): ' + (s.length > 160 ? s.slice(0, 160) + '…' : s);
+  }
+
+  // Sends through the injected bridge, the same way the WebEngage web SDK does.
+  function track(name, attrs) {
+    log('track "' + name + '" (' + name.length + ' chars), attributes: ' + preview(attrs));
+    var b = bridge();
+    if (!b) { log('No bridge: not sent', 'err'); return; }
+    try {
+      if (attrs === undefined) b.track(name); else b.track(name, attrs);
+      log('Sent', 'ok');
+    } catch (e) { log('Bridge error: ' + e.message, 'err'); }
+  }
+
+  // iOS only: posts straight to the native handler, so non-string values (objects, null)
+  // reach the SDK exactly as given, bypassing the injected track() wrapper.
+  function postIOS(message) {
+    log('iOS postMessage ' + JSON.stringify(message).slice(0, 200));
+    var h = iosHandler();
+    if (!h) { log('iOS handler not found: not sent (this case is iOS only)', 'err'); return; }
+    try { h.postMessage(message); log('Sent', 'ok'); }
+    catch (e) { log('postMessage error: ' + e.message, 'err'); }
+  }
+
+  var longKey = 'k' + 'x'.repeat(59);                 // 60 chars
+  var longValue = 'v'.repeat(1200);                   // 1200 chars
+  var manyAttrs = {};
+  for (var i = 1; i <= 40; i++) manyAttrs['attribute_' + i] = 'value_number_' + i; // ~1300-char JSON
+
+  var cases = [
+    {
+      title: 'Valid attributes',
+      expect: 'Event with all 4 attributes, unchanged.',
+      run: function () { track('bridge_valid', JSON.stringify({ product: 'Shoes', price: 1999.5, in_stock: true, tags: ['a', 'b'] })); }
+    },
+    {
+      title: 'Total JSON over 1000 characters',
+      expect: 'All 40 attributes arrive intact. Before the fix, iOS cut the whole JSON string at 1000 characters.',
+      run: function () { track('bridge_many_attrs', JSON.stringify(manyAttrs)); }
+    },
+    {
+      title: 'Key longer than 50 characters',
+      expect: 'Key trimmed to its first 50 characters; value unchanged.',
+      run: function () { var o = {}; o[longKey] = 'short value'; track('bridge_long_key', JSON.stringify(o)); }
+    },
+    {
+      title: 'Value longer than 1000 characters',
+      expect: '"long_value" trimmed to 1000 characters; "other" unchanged.',
+      run: function () { track('bridge_long_value', JSON.stringify({ long_value: longValue, other: 'ok' })); }
+    },
+    {
+      title: 'Nested object and list with long values',
+      expect: 'Long key trimmed to 50 and long strings trimmed to 1000 at every level.',
+      run: function () {
+        var inner = {}; inner[longKey] = longValue;
+        track('bridge_nested', JSON.stringify({ outer: inner, list: [longValue, 'ok', 42] }));
+      }
+    },
+    {
+      title: 'Event name longer than 50 characters',
+      expect: 'Event name trimmed to its first 50 characters.',
+      run: function () { track('bridge_event_name_' + 'n'.repeat(45), JSON.stringify({ a: 1 })); }
+    },
+    {
+      title: 'Invalid JSON attributes',
+      expect: 'Event tracked WITHOUT attributes, and an error is logged. Same on iOS and Android.',
+      run: function () { track('bridge_invalid_json', '{"product": "Shoes", price: }'); }
+    },
+    {
+      title: 'JSON array instead of object',
+      expect: 'Event tracked WITHOUT attributes.',
+      run: function () { track('bridge_json_array', '[1, 2, 3]'); }
+    },
+    {
+      title: 'Reserved "we_" event name',
+      expect: 'Event dropped; SDK logs \'Found prefix "we_"\'. Same on iOS and Android.',
+      run: function () { track('we_bridge_reserved', JSON.stringify({ a: 1 })); }
+    },
+    {
+      title: 'Emoji at the 1000-character limit',
+      expect: 'Value trimmed near 1000; check the last character is not a broken emoji.',
+      run: function () { track('bridge_emoji_boundary', JSON.stringify({ text: 'e'.repeat(999) + '😀😀' })); }
+    },
+    {
+      title: 'Attributes as a JS object',
+      ios: true,
+      expect: 'Event with attributes (already a dictionary, used as-is).',
+      run: function () { postIOS({ method_name: 'track', name: 'bridge_object_attrs', attributes: { product: 'Shoes', qty: 2 } }); }
+    },
+    {
+      title: 'Attributes set to null',
+      ios: true,
+      expect: 'Event tracked WITHOUT attributes (NSNull handled).',
+      run: function () { postIOS({ method_name: 'track', name: 'bridge_null_attrs', attributes: null }); }
+    }
+  ];
+
+  var list = $('cases');
+  cases.forEach(function (c, idx) {
+    var el = document.createElement('div');
+    el.className = 'case';
+    var t = document.createElement('b');
+    t.textContent = (idx + 1) + '. ' + c.title;
+    if (c.ios) { var tag = document.createElement('span'); tag.className = 'tag'; tag.textContent = 'iOS only'; t.appendChild(tag); }
+    var btn = document.createElement('button');
+    btn.textContent = 'Send';
+    btn.addEventListener('click', function () { log('— Case ' + (idx + 1) + ': ' + c.title, 'info'); c.run(); });
+    var ex = document.createElement('div');
+    ex.className = 'expect';
+    ex.textContent = 'Expected: ' + c.expect;
+    el.appendChild(t); el.appendChild(btn); el.appendChild(ex);
+    list.appendChild(el);
+  });
+
+  $('sendEvent').addEventListener('click', function () {
+    var name = $('evName').value;
+    var text = $('evAttrs').value.trim();
+    var mode = $('evMode').value;
+    if (!text) { track(name); return; }
+    if (mode === 'raw') { track(name, text); return; }
+    var parsed;
+    try { parsed = JSON.parse(text); }
+    catch (e) { log('Attributes are not valid JSON: ' + e.message + ' (choose "Text exactly as typed" to send it anyway)', 'err'); return; }
+    if (mode === 'object') postIOS({ method_name: 'track', name: name, attributes: parsed });
+    else track(name, JSON.stringify(parsed));
+  });
+  $('sendNoAttrs').addEventListener('click', function () { track($('evName').value); });
+
+  $('login').addEventListener('click', function () {
+    var id = $('cuid').value; log('login "' + id + '"');
+    var b = bridge(); if (!b) { log('No bridge: not sent', 'err'); return; }
+    b.login(id); log('Sent', 'ok');
+  });
+  $('logout').addEventListener('click', function () {
+    log('logout');
+    var b = bridge();
+    // Android exposes logout(); the iOS injected script doesn't, so post to the iOS handler directly.
+    if (b && typeof b.logout === 'function') { b.logout(); log('Sent', 'ok'); }
+    else if (iosHandler()) postIOS({ method_name: 'logout' });
+    else log('No bridge: not sent', 'err');
+  });
+  $('setAttr').addEventListener('click', function () {
+    var text = $('userAttrs').value.trim();
+    try { JSON.parse(text); } catch (e) { log('User attributes are not valid JSON: ' + e.message, 'err'); return; }
+    log('setAttribute ' + preview(text));
+    var b = bridge(); if (!b) { log('No bridge: not sent', 'err'); return; }
+    b.setAttribute(text); log('Sent', 'ok');
+  });
+  $('screen').addEventListener('click', function () {
+    var n = $('screenName').value; log('screen "' + n + '"');
+    var b = bridge(); if (!b) { log('No bridge: not sent', 'err'); return; }
+    b.screen(n); log('Sent', 'ok');
+  });
+  $('clearLog').addEventListener('click', function () { logEl.textContent = ''; });
+
+  updateStatus();
+  // The bridge is injected at document start, but re-check in case the app injects it later.
+  setTimeout(updateStatus, 500);
+  log('Page loaded. Platform: ' + (platform() || 'no bridge'));
+})();
+</script>
 </body>
 </html>
